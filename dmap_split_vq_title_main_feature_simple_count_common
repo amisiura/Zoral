@@ -1,0 +1,428 @@
+--dmap_split_vq_title_main_feature_simple_count_common
+begin
+declare VarTerr array <string> default[''];
+declare i default 1;
+declare query1 default 'create or replace table `zoral-sandbox.hard_buckets_tables.testvq` as (select "';
+declare query2 default '" as providerTerritory, * FROM `zoral-sandbox.hard_buckets_tables.alpha_';
+declare query3 default '_dmap_split_vq_title_main_feature_v2`' ;
+declare query4 default " where timestamp(substr(split(_FILE_NAME, '/') [offset (5)], 6, 24)) >= timestamp(date_add(current_date(), interval -1 day))";
+declare query5 default " and timestamp(substr(split(_FILE_NAME, '/') [offset (5)], 6, 24)) < timestamp(current_date()))";
+declare query default '';
+
+if exists (select 1 from `zoral-sandbox.hard_buckets_tables.INFORMATION_SCHEMA.TABLES` where table_name like 'alpha_gb_dmap_split_vq_title_main_feature_v2')
+then set VarTerr= VarTerr||['GB']; end if;
+if exists (select 1 from `zoral-sandbox.hard_buckets_tables.INFORMATION_SCHEMA.TABLES` where table_name like 'alpha_es_dmap_split_vq_title_main_feature_v2')
+then set VarTerr= VarTerr||['ES']; end if;
+if exists (select 1 from `zoral-sandbox.hard_buckets_tables.INFORMATION_SCHEMA.TABLES` where table_name like 'alpha_ie_dmap_split_vq_title_main_feature_v2')
+then set VarTerr= VarTerr||['IE']; end if;
+if exists (select 1 from `zoral-sandbox.hard_buckets_tables.INFORMATION_SCHEMA.TABLES` where table_name like 'alpha_de_dmap_split_vq_title_main_feature_v2')
+then set VarTerr= VarTerr||['DE']; end if;
+if exists (select 1 from `zoral-sandbox.hard_buckets_tables.INFORMATION_SCHEMA.TABLES` where table_name like 'alpha_it_dmap_split_vq_title_main_feature_v2')
+then set VarTerr= VarTerr||['IT']; end if;
+if exists (select 1 from `zoral-sandbox.hard_buckets_tables.INFORMATION_SCHEMA.TABLES` where table_name like 'alpha_at_dmap_split_vq_title_main_feature_v2')
+then set VarTerr= VarTerr||['AT']; end if;
+
+create or replace table `zoral-sandbox.test_report_blue.dmap_split_vq_title_main_feature_simple_daily_result`
+(
+territory string,
+event_date date,
+sourceRecordCount	int64,
+targetRecordCount	int64,
+delta int64,
+missingInSource int64,
+missingInTarget int64
+);
+
+while i < array_length(VarTerr) 
+do
+set query = query1||VarTerr[offset(i)]||query2||lower(VarTerr[offset(i)])||query3||query4||query5;
+execute immediate query;
+
+-- with 
+create or replace temp table rawsource as  
+select /*VarTerr[offset(i)] as providerTerritory,*/ * FROM `zoral-sandbox.hard_buckets_tables.alpha_gb_dmap_split_vq_title_main_feature_v2` dmap
+where
+timestamp(substr(split(_FILE_NAME, '/') [offset (5)], 6, 24)) >= timestamp(date_add(current_date(), interval -1 day))
+and timestamp(substr(split(_FILE_NAME, '/') [offset (5)], 6, 24)) < timestamp(current_date())
+;
+
+create or replace temp table  source as 
+SELECT 
+distinct 
+dmap.value.accessChannel,
+dmap.value.adiVersion,
+dmap.value.serviceKey,
+dmap.value.brandingGroup,
+dmap.value.trailerType,
+dmap.value.socMilliseconds,
+advisory.advisoryType,
+dmap.value.alternativeLanguage.audio,
+dmap.value.alternativeLanguage.audioDescription,
+dmap.value.alternativeLanguage.closedCaption,
+dmap.value.alternativeLanguage.signLanguage,
+dmap.value.alternativeLanguage.subtitles,
+dmap.value.alternativeLanguage.type,
+dmap.value.alternativeLanguage.value,
+dmap.value.audioDescribed,
+array_to_string(dmap.value.boxsetUuids, '') as value_boxsetUuids,
+dmap.value.channelGroupId,
+dmap.value.channelGroupName,
+dmap.value.closedCaptioned,
+dmap.value.contentId,
+timestamp(dmap.value.exhibitionDate) as exhibitionDate,
+dmap.value.vcmId,
+dmap.value.fragmentType,
+array_to_string(dmap.value.genre, '') as genre,
+dmap.value.hasAlternativeAudio,
+dmap.value.imageFallbackTemplate,
+images.checksum,
+images.language,
+images.name,
+images.size,
+images.url,
+images.usage,
+dmap.value.language as _language,
+timestamp(dmap.value.lastUpdated) as lastUpdated,
+localizableInformation.language as localizableInformation_language,
+localizableInformation.episodeName,
+localizableInformation.episodeNameBrief,
+localizableInformation.episodeNameLong,
+localizableInformation.episodeNumber,
+localizableInformation.marketingMessage,
+localizableInformation.seasonNameBrief,
+localizableInformation.seasonNameLong,
+localizableInformation.seasonNameMedium,
+localizableInformation.seasonNumber,
+localizableInformation.seasonSummaryBrief,
+localizableInformation.seasonSummaryLong,
+localizableInformation.seasonSummaryMedium,
+localizableInformation.seasonSummaryShort,
+localizableInformation.seriesSummaryBrief,
+localizableInformation.seriesSummaryLong,
+localizableInformation.seriesSummaryMedium,
+localizableInformation.seriesSummaryShort,
+localizableInformation.studioName,
+localizableInformation.titleNameBrief,
+localizableInformation.titleNameLong,
+localizableInformation.titleNameMedium,
+localizableInformation.titleSortName,
+localizableInformation.titleSummaryBrief,
+localizableInformation.titleSummaryLong,
+localizableInformation.titleSummaryMedium,
+localizableInformation.titleSummaryShort,
+actor.firstName,
+actor.fullName,
+actor.lastName,
+actor.agentUuid,
+actor.characterUuid,
+director.firstName as director_firstName,
+director.fullName as director_fullName,
+director.lastName as director_lastName,
+director.agentUuid as director_agentUuid,
+director.characterUuid as director_characterUuid,
+producer.firstName as producer_firstName,
+producer.fullName as producer_fullName,
+producer.lastName as producer_lastName,
+producer.agentUuid as producer_agentUuid,
+producer.characterUuid as producer_characterUuid,
+localizableInformation.name as localizableInformation_name,
+localizableInformation.isPrimary,
+dmap.value.priority,
+cast(dmap.value.productionYear as INT64) as value_productionYear,
+dmap.value.providerId,
+dmap.value.providerName,
+dmap.value.providerVariantId,
+dmap.value.published,
+dmap.value.rights.channel,
+timestamp(terms.endDateTime) as terms_endDateTime,
+timestamp(cutvEvents.epgDateTime) as cutvEvents_epgDateTime,
+cutvEvents.leadServiceKey,
+services.seriesId,
+services.serviceKey as services_serviceKey,
+timestamp(offers.endDateTime) as offers_endDateTime,
+offers.isStreamable,
+timestamp(offers.startDateTime) as offers_startDateTime,
+offers.offerType,
+offers.accessRole,
+offers.contentSegment,
+terms.territory,
+timestamp(terms.startDateTime) as terms_startDateTime,
+terms.proposition.propositionName,
+terms.proposition.serviceProvider,
+terms.proposition.serviceProviderTerritory,
+dmap.value.runtime,
+dmap.value.seasonVcmId,
+dmap.value.seasonUuid,
+dmap.value.seriesVcmId,
+dmap.value.seriesUuid,
+dmap.value.signed,
+dmap.value.durationMilliseconds,
+dmap.value.soundMouse,
+dmap.value.studioCode,
+dmap.value.subtitled,
+dmap.value.programmeUuid,
+dmap.value.version,
+dmap.value.type as value_type,
+dmap.value.uriId,
+array_to_string(dmap.value.previews, '') as dmapvaluepreviews,
+dmap.value.providerSeriesId,
+dmap.value.providerSeasonId,
+dmap.value.providerMultiformatId,
+dmap.value.duration,
+dmap.value.studioDisplay,
+dmap.value.privacyRestrictions,
+dmap.value.shortFormType,
+--///
+vad1.type as FreeWheelContentID,
+vad2.type as GracenoteID,
+vad4.type as GracenoteSeriesID,
+vad4.type as MerlinID,
+vad5.type as MerlinSeriesID,
+value.privacyRestrictions_us,
+--///
+CAST (KafkaOffset AS INT64) as KafkaOffset_int,
+kafkakey,
+timestamp(SourceSystemTimestamp) as SourceSystemTimestamp,
+case when dmap.value is not null then 'UPDATED'
+else  'DELETED'
+end as RecordType, 
+case when SourceSystemTimestamp is not null then timestamp(SourceSystemTimestamp)
+else timestamp('9999-12-31 23:59:59') end
+as SDPBusinessDate,
+providerTerritory,
+'DIF' as SDPSourceOrigin,
+'Pub/Sub' as SDPSourceType,
+case 
+  when providerTerritory in ('DE','IT') then 'sdp-analytic-dmap-split-vq-title-main-feature-de-it' 
+  when providerTerritory in ('GB','ES','IE') then 'sdp-analytic-dmap-split-vq-title-main-feature' 
+end as SDPSource
+FROM `zoral-sandbox.hard_buckets_tables.testvq` dmap
+--`zoral-sandbox.hard_buckets_tables.alpha_it_dmap_split_vq_title_main_feature_v2` dmap
+left join unnest(dmap.value.advisory) advisory
+left join unnest(dmap.value.images) images
+left join unnest(dmap.value.localizableInformation) localizableInformation
+left join unnest(localizableInformation.credits.actor) actor
+left join unnest(localizableInformation.credits.director) director
+left join unnest(localizableInformation.credits.producer) producer
+left join unnest(value.rights.terms) terms
+left join unnest(terms.offers) offers
+left join unnest(offers.cutvEvents) cutvEvents
+left join unnest(cutvEvents.services) services
+left join unnest(dmap.value.alternateId) vad1 on vad1.type = 'FreeWheelContentID'
+left join unnest(dmap.value.alternateId) vad2 on vad2.type = 'GracenoteID'
+left join unnest(dmap.value.alternateId) vad3 on vad3.type = 'GracenoteSeriesID'
+left join unnest(dmap.value.alternateId) vad4 on vad4.type = 'MerlinID'
+left join unnest(dmap.value.alternateId) vad5 on vad5.type = 'MerlinSeriesID'
+
+-- on dmap.value.alternateId.type = 'FreeWheelContentID'
+
+
+--and kafkaKey = 'TF1326021' and kafkaOffset = '38142'
+; 
+
+create or replace temp table target as
+select 
+distinct
+AccessChannel,
+AdiVersion,
+ServiceKey,
+BrandingGroup,
+TrailerType,
+SocMilliseconds,
+Advisory.AdvisoryType as aaType,
+AlternativeLanguage.Audio,
+AlternativeLanguage.AudioDescription,
+AlternativeLanguage.ClosedCaption,
+AlternativeLanguage.SignLanguage,
+AlternativeLanguage.Subtitles,
+AlternativeLanguage.Type as alType,
+AlternativeLanguage.Value,
+AudioDescribed,
+array_to_string(BoxsetUuids, '') as BoxsetUuids,
+ChannelGroupId,
+ChannelGroupName,
+ClosedCaptioned,
+ContentId,
+ExhibitionDate,
+VcmId,
+FragmentType,
+array_to_string(Genre, '') as Genre,
+HasAlternativeAudio,
+ImageFallbackTemplate,
+Images.Checksum,
+Images.Language as ImagesLanguage,
+Images.Name,
+Images.Size,
+Images.Url,
+Images.Usage,
+t.Language as _Language,
+--34
+LastUpdated,
+LocalizableInformation.Language as LIlanguage,
+LocalizableInformation.EpisodeName,
+LocalizableInformation.EpisodeNameBrief,
+LocalizableInformation.EpisodeNameLong,
+LocalizableInformation.EpisodeNumber,
+LocalizableInformation.MarketingMessage,
+LocalizableInformation.SeasonNameBrief,
+LocalizableInformation.SeasonNameLong,
+LocalizableInformation.SeasonNameMedium,
+LocalizableInformation.SeasonNumber,
+LocalizableInformation.SeasonSummaryBrief,
+LocalizableInformation.SeasonSummaryLong,
+LocalizableInformation.SeasonSummaryMedium,
+LocalizableInformation.SeasonSummaryShort,
+LocalizableInformation.SeriesSummaryBrief,
+LocalizableInformation.SeriesSummaryLong,
+LocalizableInformation.SeriesSummaryMedium,
+LocalizableInformation.SeriesSummaryShort,
+LocalizableInformation.StudioName,
+LocalizableInformation.TitleNameBrief,
+LocalizableInformation.TitleNameLong,
+LocalizableInformation.TitleNameMedium,
+LocalizableInformation.TitleSortName,
+LocalizableInformation.TitleSummaryBrief,
+LocalizableInformation.TitleSummaryLong,
+LocalizableInformation.TitleSummaryMedium,
+LocalizableInformation.TitleSummaryShort,
+Actor.FirstName as aFirstName,
+Actor.FullName as aFullName,
+Actor.LastName as aLastName,
+Actor.AgentUuid as aAgentUuid,
+Actor.CharacterUuid as aCharacterUuid,
+Director.FirstName as dFirstName,
+Director.FullName as dFullName,
+Director.LastName as dLastName,
+Director.AgentUuid as dAgentUuid,
+Director.CharacterUuid as dCharacterUuid,
+Producer.FirstName as pFirstName,
+Producer.FullName as pFullName,
+Producer.LastName as pLastName,
+Producer.AgentUuid as pAgentUuid,
+Producer.CharacterUuid as pCharacterUuid,
+LocalizableInformation.Name as liname,
+LocalizableInformation.IsPrimary,
+Priority,
+ProductionYear,
+ProviderId,
+ProviderName,
+ProviderVariantId,
+Published,
+Channel,
+TermsEndDateTime,
+CutvEventsEpgDateTime,
+CutvEventsLeadServiceKey,
+CutvEventsServicesSeriesId,
+CutvEventsServicesServiceKey,
+OffersEndDateTime,
+IsStreamable,
+OffersStartDateTime,
+OfferType,
+AccessRole,
+OffersContentSegment,
+TermsTerritory,
+TermsStartDateTime,
+PropositionName,
+PropositionServiceProvider,
+PropositionServiceProviderTerritory,
+Runtime,
+SeasonVcmId,
+SeasonUuid,
+SeriesVcmId,
+SeriesUuid,
+Signed,
+DurationMilliseconds,
+SoundMouse,
+StudioCode,
+Subtitled,
+ProgrammeUuid,
+Version,
+Type as type1,
+UriId,
+array_to_string(Previews, '') as Previews,
+ProviderSeriesId,
+ProviderSeasonId,
+ProviderMultiformatId,
+Duration,
+StudioDisplay,
+PrivacyRestrictions,
+ShortFormType,
+--//
+FreeWheelContentID,
+GracenoteID,
+GracenoteSeriesID,
+MerlinID,
+MerlinSeriesID,
+PrivacyRestrictions_US,
+--//
+KafkaOffset_int,
+KafkaKey,
+SourceSystemTimestamp,
+RecordType,
+SDPBusinessDate,
+SDPTerritory,
+SDPSourceOrigin,
+SDPSourceType,
+array_to_string(SDPSource, '') as SDPSource
+
+from `sdp-prod-100.sdp_tables_blue.DMapSplitVQTitle` t
+left join unnest(t.Advisory) Advisory
+left join unnest(t.Images) Images
+left join unnest(t.LocalizableInformation) LocalizableInformation
+left join unnest(LocalizableInformation.Credits.Actor) Actor
+left join unnest(LocalizableInformation.Credits.Director) Director
+left join unnest(LocalizableInformation.Credits.Producer) Producer
+where 
+    SDPTimestamp >= timestamp(date_add(current_date(), interval -1 day))
+and SDPTimestamp < timestamp(current_date())
+and SDPTerritory = VarTerr[offset(i)]
+--kafkaKey = 'TF1326021' and kafkaOffset = '38142'
+;
+
+create or replace temp table check as 
+select side,  sum(nb) as nb from (
+select "Missing in source" as side, count (1) as nb from (select * from source
+except distinct
+select * from target)
+union all
+select "Missing in target" as side, count (1) as nb from (select * from target
+except distinct
+select * from source
+)
+) group by side
+;
+
+create or replace temp table source_counts as 
+select source.providerTerritory as territory, date_add(current_date(), interval -1 day) as event_date, count(1) as recordCounts from source 
+group by source.providerTerritory;
+
+create or replace temp table target_counts as 
+select target.SDPTerritory as territory, date_add(current_date(), interval -1 day) as event_date, count(1) as recordCounts from target 
+group by target.SDPTerritory;
+
+create or replace temp table results as
+select
+VarTerr[offset(i)] as territory,
+event_date,
+sum(sourceRecordCount) as sourceRecordCount,
+sum(targetRecordCount) as targetRecordCount,
+sum (Delta) as Delta,
+ifnull((select nb from check where  side="Missing in source"), 0) as MissingInSource,
+ifnull((select nb from check where  side="Missing in target"), 0) as MissingInTarget
+from
+(
+SELECT VarTerr[offset(i)] as territory, coalesce(t.event_date, s.event_date) as event_date, coalesce(s.recordCounts,0) AS sourceRecordCount,
+coalesce(t.recordCounts,0) AS targetRecordCount,  coalesce(s.recordCounts,0) - coalesce(t.recordCounts,0) AS Delta
+FROM source_counts AS s
+FULL OUTER JOIN target_counts AS t
+on s.event_date=t.event_date
+)
+group by event_date;
+set i = i + 1;
+
+insert into `zoral-sandbox.test_report_blue.dmap_split_vq_title_main_feature_simple_daily_result`
+select * from results;
+
+end while;
+select * from `zoral-sandbox.test_report_blue.dmap_split_vq_title_main_feature_simple_daily_result`;
+end;
