@@ -1,26 +1,37 @@
---dmap_split_vq_title_main_feature_simple_count_common
+--dmap_split_vq_title_main_feature_simple_count_it
 begin
 declare VarTerr array <string> default[''];
-declare i default 1;
-declare query1 default 'create or replace table `zoral-sandbox.hard_buckets_tables.testvq` as (select "';
+declare Terr default ['ES','GB','IT','IE','DE','AT'];
+declare i default 0;
+declare query1 default 'create or replace temp table rawsource as (select "';
 declare query2 default '" as providerTerritory, * FROM `zoral-sandbox.hard_buckets_tables.alpha_';
 declare query3 default '_dmap_split_vq_title_main_feature_v2`' ;
 declare query4 default " where timestamp(substr(split(_FILE_NAME, '/') [offset (5)], 6, 24)) >= timestamp(date_add(current_date(), interval -1 day))";
 declare query5 default " and timestamp(substr(split(_FILE_NAME, '/') [offset (5)], 6, 24)) < timestamp(current_date()))";
 declare query default '';
 
-if exists (select 1 from `zoral-sandbox.hard_buckets_tables.INFORMATION_SCHEMA.TABLES` where table_name like 'alpha_gb_dmap_split_vq_title_main_feature_v2')
-then set VarTerr= VarTerr||['GB']; end if;
-if exists (select 1 from `zoral-sandbox.hard_buckets_tables.INFORMATION_SCHEMA.TABLES` where table_name like 'alpha_es_dmap_split_vq_title_main_feature_v2')
-then set VarTerr= VarTerr||['ES']; end if;
-if exists (select 1 from `zoral-sandbox.hard_buckets_tables.INFORMATION_SCHEMA.TABLES` where table_name like 'alpha_ie_dmap_split_vq_title_main_feature_v2')
-then set VarTerr= VarTerr||['IE']; end if;
-if exists (select 1 from `zoral-sandbox.hard_buckets_tables.INFORMATION_SCHEMA.TABLES` where table_name like 'alpha_de_dmap_split_vq_title_main_feature_v2')
-then set VarTerr= VarTerr||['DE']; end if;
-if exists (select 1 from `zoral-sandbox.hard_buckets_tables.INFORMATION_SCHEMA.TABLES` where table_name like 'alpha_it_dmap_split_vq_title_main_feature_v2')
-then set VarTerr= VarTerr||['IT']; end if;
-if exists (select 1 from `zoral-sandbox.hard_buckets_tables.INFORMATION_SCHEMA.TABLES` where table_name like 'alpha_at_dmap_split_vq_title_main_feature_v2')
-then set VarTerr= VarTerr||['AT']; end if;
+-- if exists (select 1 from `zoral-sandbox.hard_buckets_tables.INFORMATION_SCHEMA.TABLES` where table_name like 'alpha_gb_dmap_split_vq_title_main_feature_v2')
+-- then set VarTerr= VarTerr||['GB']; end if;
+-- if exists (select 1 from `zoral-sandbox.hard_buckets_tables.INFORMATION_SCHEMA.TABLES` where table_name like 'alpha_es_dmap_split_vq_title_main_feature_v2')
+-- then set VarTerr= VarTerr||['ES']; end if;
+-- if exists (select 1 from `zoral-sandbox.hard_buckets_tables.INFORMATION_SCHEMA.TABLES` where table_name like 'alpha_ie_dmap_split_vq_title_main_feature_v2')
+-- then set VarTerr= VarTerr||['IE']; end if;
+-- if exists (select 1 from `zoral-sandbox.hard_buckets_tables.INFORMATION_SCHEMA.TABLES` where table_name like 'alpha_de_dmap_split_vq_title_main_feature_v2')
+-- then set VarTerr= VarTerr||['DE']; end if;
+-- if exists (select 1 from `zoral-sandbox.hard_buckets_tables.INFORMATION_SCHEMA.TABLES` where table_name like 'alpha_it_dmap_split_vq_title_main_feature_v2')
+-- then set VarTerr= VarTerr||['IT']; end if;
+-- if exists (select 1 from `zoral-sandbox.hard_buckets_tables.INFORMATION_SCHEMA.TABLES` where table_name like 'alpha_at_dmap_split_vq_title_main_feature_v2')
+-- then set VarTerr= VarTerr||['AT']; end if;
+
+
+set VarTerr=(select array_agg(upper(substr(table_id, 7, 2)) order by table_id)
+from `zoral-sandbox.hard_buckets_tables.__TABLES_SUMMARY__`
+where regexp_contains(table_id, r'alpha_('||lower(array_to_string(Terr, "|"))||')_dmap_split_vq_title_main_feature_v2'));
+
+
+
+
+
 
 create or replace table `zoral-sandbox.test_report_blue.dmap_split_vq_title_main_feature_simple_daily_result`
 (
@@ -39,12 +50,12 @@ set query = query1||VarTerr[offset(i)]||query2||lower(VarTerr[offset(i)])||query
 execute immediate query;
 
 -- with 
-create or replace temp table rawsource as  
-select /*VarTerr[offset(i)] as providerTerritory,*/ * FROM `zoral-sandbox.hard_buckets_tables.alpha_gb_dmap_split_vq_title_main_feature_v2` dmap
-where
-timestamp(substr(split(_FILE_NAME, '/') [offset (5)], 6, 24)) >= timestamp(date_add(current_date(), interval -1 day))
-and timestamp(substr(split(_FILE_NAME, '/') [offset (5)], 6, 24)) < timestamp(current_date())
-;
+--create or replace temp table rawsource as  
+--select /*VarTerr[offset(i)] as providerTerritory,*/ * FROM `zoral-sandbox.hard_buckets_tables.alpha_gb_dmap_split_vq_title_main_feature_v2` dmap
+--where
+--timestamp(substr(split(_FILE_NAME, '/') [offset (5)], 6, 24)) >= timestamp(date_add(current_date(), interval -1 day))
+--and timestamp(substr(split(_FILE_NAME, '/') [offset (5)], 6, 24)) < timestamp(current_date());
+
 
 create or replace temp table  source as 
 SELECT 
@@ -62,7 +73,7 @@ dmap.value.alternativeLanguage.closedCaption,
 dmap.value.alternativeLanguage.signLanguage,
 dmap.value.alternativeLanguage.subtitles,
 dmap.value.alternativeLanguage.type,
-dmap.value.alternativeLanguage.value,
+dmap.value.alternativeLanguage.value as val_value,
 dmap.value.audioDescribed,
 array_to_string(dmap.value.boxsetUuids, '') as value_boxsetUuids,
 dmap.value.channelGroupId,
@@ -178,7 +189,7 @@ vad2.type as GracenoteID,
 vad4.type as GracenoteSeriesID,
 vad4.type as MerlinID,
 vad5.type as MerlinSeriesID,
-value.privacyRestrictions_us,
+-- value dmap.value.privacyRestrictions_us,
 --///
 CAST (KafkaOffset AS INT64) as KafkaOffset_int,
 kafkakey,
@@ -196,7 +207,8 @@ case
   when providerTerritory in ('DE','IT') then 'sdp-analytic-dmap-split-vq-title-main-feature-de-it' 
   when providerTerritory in ('GB','ES','IE') then 'sdp-analytic-dmap-split-vq-title-main-feature' 
 end as SDPSource
-FROM `zoral-sandbox.hard_buckets_tables.testvq` dmap
+FROM --`zoral-sandbox.hard_buckets_tables.alpha_gb_dmap_split_vq_title_main_feature_v2` dmap
+rawsource dmap
 --`zoral-sandbox.hard_buckets_tables.alpha_it_dmap_split_vq_title_main_feature_v2` dmap
 left join unnest(dmap.value.advisory) advisory
 left join unnest(dmap.value.images) images
@@ -204,7 +216,7 @@ left join unnest(dmap.value.localizableInformation) localizableInformation
 left join unnest(localizableInformation.credits.actor) actor
 left join unnest(localizableInformation.credits.director) director
 left join unnest(localizableInformation.credits.producer) producer
-left join unnest(value.rights.terms) terms
+left join unnest(dmap.value.rights.terms) terms
 left join unnest(terms.offers) offers
 left join unnest(offers.cutvEvents) cutvEvents
 left join unnest(cutvEvents.services) services
@@ -212,13 +224,13 @@ left join unnest(dmap.value.alternateId) vad1 on vad1.type = 'FreeWheelContentID
 left join unnest(dmap.value.alternateId) vad2 on vad2.type = 'GracenoteID'
 left join unnest(dmap.value.alternateId) vad3 on vad3.type = 'GracenoteSeriesID'
 left join unnest(dmap.value.alternateId) vad4 on vad4.type = 'MerlinID'
-left join unnest(dmap.value.alternateId) vad5 on vad5.type = 'MerlinSeriesID'
+left join unnest(dmap.value.alternateId) vad5 on vad5.type = 'MerlinSeriesID';
 
 -- on dmap.value.alternateId.type = 'FreeWheelContentID'
 
 
 --and kafkaKey = 'TF1326021' and kafkaOffset = '38142'
-; 
+
 
 create or replace temp table target as
 select 
@@ -353,7 +365,7 @@ GracenoteID,
 GracenoteSeriesID,
 MerlinID,
 MerlinSeriesID,
-PrivacyRestrictions_US,
+-- PrivacyRestrictions_US,
 --//
 KafkaOffset_int,
 KafkaKey,
