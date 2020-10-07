@@ -1,0 +1,178 @@
+-- --HARD FEEDS
+call `zoral-sandbox.test_report_blue.mpp_order_feed_cnt_proc`();----Exception
+call `zoral-sandbox.test_report_blue.roku_monthly_platform_usage_report_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.roku_monthly_channel_usage_report_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.roku_daily_device_activation_report_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.roku_channel_session_report_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.reinstate_subscription_success_feed_count_proc`();----Exception  order
+call `zoral-sandbox.test_report_blue.refund_success_feed_count_proc`();----Exception  order
+call `zoral-sandbox.test_report_blue.refund_failure_feed_count_proc`();----Exception  order
+call `zoral-sandbox.test_report_blue.purchase_success_feed_count_proc`();----Exception  order
+call `zoral-sandbox.test_report_blue.freewheel_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.elapsed_cancelled_entitlement_feed_count_proc`();----Exception--------------+++++++++++++++++++++  Entitlement
+call `zoral-sandbox.test_report_blue.device_purchased_feed_cnt_proc`();----Exception
+call `zoral-sandbox.test_report_blue.device_activated_feed_cnt_proc`();----Exception
+call `zoral-sandbox.test_report_blue.delete_payment_account_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.cancellation_offer_feed_cnt_proc`();----Exception
+call `zoral-sandbox.test_report_blue.barclaycard_payment_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.barclaycards_refunds_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.AWIN_transaction_list_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.apply_voucher_to_sub_success_feed_count_proc`();--++  order
+call `zoral-sandbox.test_report_blue.add_entitlement_feed_count_proc`();----Exception ---------++++++++++++++++++++++++++++++++++
+call `zoral-sandbox.test_report_blue.activation_success_feed_cnt_proc`();----Exception
+--call `zoral-sandbox.test_report_blue.account_manager_account_updated_temp_proc`();---hhhhhhhh
+call `zoral-sandbox.test_report_blue.account_updated_account_trials_used_feed_cnt_proc`();----Exception--- AccountTrialsUsed
+call `zoral-sandbox.test_report_blue.account_updated_billing_address_feed_cnt_proc`();----Exception --Address
+call `zoral-sandbox.test_report_blue.account_updated_delivery_address_feed_cnt_proc`();----Exception --Address
+--call `zoral-sandbox.test_report_blue.account_manager_account_updated_delete_proc` ();---hhhhhhhh
+call `zoral-sandbox.test_report_blue.oogway_primary_profile_modified_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.oogway_profile_created_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.oogway_profile_modified_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.quality_of_service_feed_count_proc`();----Exception
+
+call `zoral-sandbox.test_report_blue.pomCatalogue_offer_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.pomCatalogue_pomcataloguemodelinfo_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.pomCatalogue_product_feed_count_proc`();----Exception
+
+call `zoral-sandbox.test_report_blue.fulfilment_Dispatch_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.fulfilment_line_delivered_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.fulfilment_line_undelivered_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.fulfilment_manager_retailers_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.fulfilment_order_cancelled_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.fulfilment_order_delivered_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.fulfilment_order_return_in_transit_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.fulfilment_order_return_received_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.fulfilment_order_undelivered_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.payments_manager_cancel_pass_failure_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.payments_manager_cancel_pass_success_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.send_hardware_failure_secured_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.send_hardware_success_secured_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.pnm_capture_success_feed_proc`();----Exception PaymentNotification
+call `zoral-sandbox.test_report_blue.pnm_authorise_failure_feed_proc`();----Exception
+call `zoral-sandbox.test_report_blue.pnm_authorise_success_feed_proc`();----Exception
+call `zoral-sandbox.test_report_blue.pnm_cancel_refund_failure_feed_proc`();----Exception
+call `zoral-sandbox.test_report_blue.pnm_cancel_refund_success_feed_proc`();----Exception
+call `zoral-sandbox.test_report_blue.pnm_capture_failure_feed_proc`();----Exception
+call `zoral-sandbox.test_report_blue.pnm_card_updater_notification_feed_proc`();----Exception PaymentNotification
+call `zoral-sandbox.test_report_blue.activate_entitlement_feed_count_proc`();----Exception Entitlement
+call `zoral-sandbox.test_report_blue.adobe_campaign_manager_tracking_log_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.adobe_campaign_manager_api_survey_response_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.adobe_campaign_manager_broadcast_log_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.adobe_campaign_manager_trans_broadcast_log_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.adobe_campaign_manager_trans_tracking_log_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.cancel_subscription_success_feed_count_proc`();----Exception order
+call `zoral-sandbox.test_report_blue.SPS_Download_Manager_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.DCM_add_Device_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.DCM_Block_Household_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.DCM_heartbeat_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.DCM_Remove_Device_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.DCM_stream_eviction_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.dcm_stream_stop_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.dcm_streaming_vod_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.DCM_streamlinear_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.DCM_unblock_Household_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.dcm_update_device_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.SPS_Play_Live_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.SPS_Play_Vod_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.store_payment_accounts_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.VoucherManager_redeem_voucher_feed_count_proc`();----Exception --Voucher
+call `zoral-sandbox.test_report_blue.VoucherManager_reverse_redeem_voucher_feed_count_proc`();----Exception --Voucher
+call `zoral-sandbox.test_report_blue.VoucherManager_voucher_campaign_feed_count_proc`();----Exception  Campaign
+call `zoral-sandbox.test_report_blue.VoucherManager_voucher_feed_count_proc`();----Exception --Voucher
+call `zoral-sandbox.test_report_blue.sm_renew_subscription_failure_feed_count_proc`();----Exception --SubscriptionRenewal
+call `zoral-sandbox.test_report_blue.sm_renew_subscription_success_feed_count_proc`();----Exception --SubscriptionRenewal
+CALL `zoral-sandbox.test_report_blue.renew_failure_feed_count_proc`();----Exception  order
+call `zoral-sandbox.test_report_blue.renew_success_feed_count_proc`();----Exception order
+
+call `zoral-sandbox.test_report_blue.salesforce_case_ext_proc` ();
+call `zoral-sandbox.test_report_blue.salesforce_account_gb_ie_feed_count_proc`();
+call `zoral-sandbox.test_report_blue.salesforce_account_at_es_feed_count_proc`();
+call `zoral-sandbox.test_report_blue.salesforce_action_at_es_feed_count_proc`();
+call `zoral-sandbox.test_report_blue.salesforce_action_gb_ie_feed_count_proc`();
+call `zoral-sandbox.test_report_blue.salesforce_case_status_history_at_es_feed_count_proc`();
+call `zoral-sandbox.test_report_blue.salesforce_case_status_history_gb_ie_feed_count_proc`();
+call `zoral-sandbox.test_report_blue.salesforce_case_feed_count_proc`();------Exception
+call `zoral-sandbox.test_report_blue.salesforce_incident_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.salesforce_case_survey_result_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.salesforce_chat_transcript_at_es_feed_count_proc`();----Exception
+call  `zoral-sandbox.test_report_blue.salesforce_chat_transcript_gb_ie_feed_count_proc`();----Exception
+
+call `zoral-sandbox.test_report_blue.purchase_failure_feed_count_proc`();----Exception-  order
+call `zoral-sandbox.test_report_blue.recurring_contract_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.product_activated_feed_count_proc`(); ----Exception
+call `zoral-sandbox.test_report_blue.product_created_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.product_cancelled_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.dmap_offer_feed_count_proc`();------Exception
+call `zoral-sandbox.test_report_blue.atom_device_promotions_feed_count_proc`();------Exception
+call `zoral-sandbox.test_report_blue.payments_manager_convert_portfolio_failure_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.payments_manager_convert_portfolio_success_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.sps_play_recording_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.payments_manager_manage_portfolio_failure_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.payments_manager_manage_portfolio_success_feed_count_proc`();----Exception
+
+
+call `zoral-sandbox.test_report_blue.dmap_split_lq_scheduled_airing_feed_count_proc`();----Exception
+
+call `zoral-sandbox.test_report_blue.dmap_split_dq_movie_feed_count_proc`();----Exception
+CALL `zoral-sandbox.test_report_blue.dmap_split_dq_movie_rating_count_proc`();
+
+call `zoral-sandbox.test_report_blue.dmap_split_dq_series_feed_count_proc`();----Exception
+CALL `zoral-sandbox.test_report_blue.dmap_split_dq_series_rating_count_proc`();
+
+call `zoral-sandbox.test_report_blue.dmap_split_dq_season_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.dmap_split_dq_season_rating_count_proc`();----Exception
+
+call `zoral-sandbox.test_report_blue.dmap_split_dq_programme_feed_count_proc`();----Exception
+CALL `zoral-sandbox.test_report_blue.dmap_split_dq_programme_rating_count_proc`();
+
+call `zoral-sandbox.test_report_blue.dmap_split_bound_asset_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.dmap_split_dq_credit_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.dmap_split_dq_person_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.dmap_split_lq_region_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.dmap_split_lq_service_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.dmap_split_lq_region_service_feed_count_proc`();----Exception
+
+call `zoral-sandbox.test_report_blue.dmap_split_vq_title_main_feature_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.dmap_split_vq_title_main_feature_feed_simple_count_proc`();
+call `zoral-sandbox.test_report_blue.dmap_split_vq_title_main_feature_assets_count_proc`();
+call `zoral-sandbox.test_report_blue.dmap_split_vq_title_main_feature_rating_count_proc`();
+
+call `zoral-sandbox.test_report_blue.credit_manager_reverse_redeem_credit_success_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.credit_manager_reverse_add_credit_success_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.credit_manager_redeem_credit_success_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.credit_manager_add_credit_success_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.credit_manager_reverse_add_credit_failure_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.credit_manager_redeem_credit_failure_feed_count_proc`();
+call `zoral-sandbox.test_report_blue.credit_manager_add_credit_failure_feed_count_proc`();----Exception
+call `zoral-sandbox.test_report_blue.credit_manager_reverse_redeem_credit_failure_feed_count_proc`();----Exception
+
+call `zoral-sandbox.test_report_blue.credit_manager_credit_near_expiry_feed_count_proc`();----Exception
+
+call `zoral-sandbox.test_report_blue.entitlement_manager_deactivate_entitlement_feed_count_proc`();----Exception  ------+++++++++++++++++++++++++
+call `zoral-sandbox.test_report_blue.entitlement_manager_reinstate_entitlement_feed_count_proc`();----Exception---------------+++++++++++++++
+call `zoral-sandbox.test_report_blue.entitlement_manager_cancel_entitlement_feed_count_proc`();----Exception- -------------++++++++++++++++++++++
+--gateways feeds--NEW
+call `zoral-sandbox.test_report_blue.payments_gateway_authorise_payment_failure_proc`();
+call `zoral-sandbox.test_report_blue.payments_gateway_authorise_payment_success_proc`();
+call `zoral-sandbox.test_report_blue.payments_gateway_cancel_authorise_success_proc`();
+call `zoral-sandbox.test_report_blue.payments_gateway_cancel_or_refund_success_proc`();
+call `zoral-sandbox.test_report_blue.payments_gateway_refund_failure_proc`();
+call `zoral-sandbox.test_report_blue.payments_gateway_refund_success_proc`();
+call `zoral-sandbox.test_report_blue.payments_gateway_validate_payment_account_failure_proc`();	
+call `zoral-sandbox.test_report_blue.payments_gateway_validate_payment_account_success_proc`();
+
+--surveys
+call `zoral-sandbox.test_report_blue.adobe_campaign_manager_surveys_answers_feed_count_proc`();
+call `zoral-sandbox.test_report_blue.adobe_campaign_manager_surveys_feed_count_proc`();
+call `zoral-sandbox.test_report_blue.adobe_campaign_manager_surveys_questions_feed_count_proc`();
+call `zoral-sandbox.test_report_blue.adobe_campaign_manager_surveys_responses_feed_count_proc`();
+
+--new SPS EUPA feeds
+call `zoral-sandbox.test_report_blue.SPS_Download_Manager_Eupa_feed_count_proc`();
+call `zoral-sandbox.test_report_blue.SPS_Play_Live_Eupa_feed_count_proc`();
+call `zoral-sandbox.test_report_blue.SPS_Play_Vod_Eupa_feed_count_proc`();
+
+--new oogway EUPA
+call `zoral-sandbox.test_report_blue.oogway_profile_modified_eupa_cnt_proc`();
+--///
+call `zoral-sandbox.test_report_blue.daily_result_feed_table_proc` ();---hhhhhhhh
