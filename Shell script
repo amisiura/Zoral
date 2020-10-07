@@ -1,0 +1,124 @@
+for bckt in $(gsutil ls gs://nbcu-sdp-prod-003-gila-secured-data/archives/ | grep -E '/at-|/de-|/es-|/gb-|/ie-|/it-'); do
+  bq mk --external_table_definition=@AVRO=${bckt}part-2020-02*.avro ext_tables_2020_test.$(echo $bckt | cut -d '/' -f 5 | sed 's/-/_/g' | sed 's/_secured//')
+done
+
+bq rm -d -r -f hard_buckets_tables
+
+nbcu-sdp-prod-003-gila-secured-data/archives/gb-fulfilment-manager-fulfilment-line-delivered-secured/part-2020*.avro
+
+/*
+for bckt in $(gsutil ls gs://nbcu-sdp-prod-003-gila-secured-data/archives/ | grep -E '/alpha-eu-adobe-campaign-manager-*'); do
+  bq mk --external_table_definition=@AVRO=$bckt*.avro hard_buckets_tables.$(echo $bckt | cut -d '/' -f 5 | sed 's/-/_/g' | sed 's/_secured//')
+done
+*/
+
+
+
+--general script
+y=$(date --date='1 day ago' +%Y)
+m=$(date --date='1 day ago' +%m)
+d=$(date  -d "-1 day" +%d)
+for bckt in $(gsutil ls gs://nbcu-sdp-prod-003-gila-secured-data/archives/ | grep -E '/at-|/de-|/es-|/gb-|/ie-|/it-'); do
+test [ ${bckt}part-$y-$m*.avro]
+	bq mk --external_table_definition=@AVRO=${bckt}part-$y-$m*.avro ext_tables_2020.$(echo $bckt | cut -d '/' -f 5 | sed 's/-/_/g' | sed 's/_secured//')
+test [ ${bckt}part-$y*.avro] 
+	bq mk --external_table_definition=@AVRO=${bckt}part-$y*.avro ext_tables_2020.$(echo $bckt | cut -d '/' -f 5 | sed 's/-/_/g' | sed 's/_secured//')
+test [${bckt}*.avro]
+	bq mk --external_table_definition=@AVRO=${bckt}*.avro ext_tables_2020.$(echo $bckt | cut -d '/' -f 5 | sed 's/-/_/g' | sed 's/_secured//')
+done
+
+
+
+gsutil ls gs://sdp-prod-100-gila-secured-data/archives/| grep -E '/*now-tv*'
+
+y=$(date --date='1 day ago' +%Y)
+m=$(date --date='1 day ago' +%m)
+d=$(date  -d "-1 day" +%d)
+for bckt in $(gsutil ls gs://sdp-prod-100-gila-secured-data/archives/ | grep -E '/*dmap-split-lq-service-v2-secured'); do
+test [ ${bckt}part-$y-$m-$d*.avro]
+	bq mk --external_table_definition=@AVRO=${bckt}part-$y-$m-$d*.avro hard_buckets_tables.$(echo $bckt | cut -d '/' -f 5 | sed 's/-/_/g' | sed 's/_secured//')
+test [${bckt}*.avro]
+	bq mk --external_table_definition=@AVRO=${bckt}*.avro hard_buckets_tables.$(echo $bckt | cut -d '/' -f 5 | sed 's/-/_/g' | sed 's/_secured//')
+done
+
+alpha-ie-dmap-split-lq-service-v2-secured
+-------////////////////////////
+exceptions
+
+
+y=$(date +%Y)
+m=$(date +%m)
+d=$(date +%d)
+
+y=$(date --date='1 day ago' +%Y)
+m=$(date --date='1 day ago' +%m)
+d=$(date  -d "-1 day" +%d)
+bq rm -d -r -f hard_buckets_tables
+bq --location=EU mk -d hard_buckets_tables
+for bckt in $(gsutil ls gs://sdp-prod-100-gila-secured-data/archives/ | grep -E '/*-adobe-campaign-*|*-atom-*|*-dmap-*|*-dcm-*|*-credit-manager-*|*-sps-*|*-payments-gateway-*|*-payment-manager-*|*-voucher-manager-*|*-sub-manager-*|*-salesforce-*|*-payments-notification-manager-*|*-now-tv-*|*-entitlement-manager-*|*-payments-manager-*|*-fulfilment-manager-*|*-pom-catalogue-*|*-conviva-quality-*|*-oogway-*|*-account-manager-*|*-activation-service-*|*-awin-transactions-list-secured|*-barclaycards-*|*-account-manager-*|*-roku-channel-session-report-secured|*-roku-daily-device-activation-report-secured|*-roku-monthly-channel-usage-report-secured|*-roku-monthly-platform-usage-report-secured|*mpp-order*|*-freewheel-*'); do
+test [ ${bckt}part-$y-$m-$d*.avro]
+	bq mk --external_table_definition=@AVRO=${bckt}part-$y-$m-$d*.avro hard_buckets_tables.$(echo $bckt | cut -d '/' -f 5 | sed 's/-/_/g' | sed 's/_secured//')
+done
+
+
+
+for bckt in $(gsutil ls gs://sdp-prod-100-gila-secured-data/archives/ | grep -E '/*-dmap-*'); do
+test [ ${bckt}*.avro]
+	bq mk --external_table_definition=@AVRO=${bckt}*.avro hard_buckets_tables.$(echo $bckt | cut -d '/' -f 5 | sed 's/-/_/g' | sed 's/_secured//')
+done
+
+
+gsutil ls gs://sdp-prod-100-gila-secured-data/archives/ | grep -E '/*gb-now-tv-platform-product-cancelled*'
+
+
+-----//////////////////
+nbcu-sdp-prod-003-gila-secured-data/archives/us-peacock-adobe-analytics-secured
+
+
+--us feeds
+gsutil ls gs://nbcu-sdp-prod-003-gila-secured-data/archives/ | grep -E '/*-peacock-*'
+
+us exceptions
+
+y=$(date --date='1 day ago' +%Y)
+m=$(date --date='1 day ago' +%m)
+d=$(date  -d "-1 day" +%d) 
+
+y=$(date +%Y)
+m=$(date +%m)
+d=$(date +%d)
+dd=$(date  -d "-1 day" +%d) 
+bq rm -d -r -f ext_tables_us
+bq --location=US mk -d ext_tables_us
+for bckt in $(gsutil ls gs://nbcu-sdp-prod-003-gila-secured-data/archives/ | grep -E '/*-dmap-*|*-compass-*|*-peacock-*|*-mparticle-*|alpha-us-adobe-campaign-manager-survey-*|alpha-eu-adobe-campaign-manager-survey-*|*-payment-manager-purchase-success-secured|*-payment-manager-renew-success-secured|*-payment-manager-refund-success-secured|*-oogway-*'); do
+test [ ${bckt}part-$y-$m-$d*.avro]
+	bq mk --external_table_definition=@AVRO=${bckt}part-$y-$m-$d*.avro ext_tables_us.$(echo $bckt | cut -d '/' -f 5 | sed 's/-/_/g' | sed 's/_secured//')
+done
+bq mk --external_table_definition=@AVRO=gs://nbcu-sdp-prod-003-gila-secured-data/archives/us-peacock-adobe-analytics-secured/part-$y-$m-$dd*.avro ext_tables_us.us_peacock_adobe_analytics_prev_day
+
+
+
+
+
+tom horvard
+
+
+*-payment-manager-refund-success-secured
+
+*-payment-manager-*
+
+y=$(date +%Y)
+m=$(date +%m)
+d=$(date  -d "-2 day" +%d)
+bq --location=EU mk -d salesforce_test_stable_us_22
+for bckt in $(gsutil ls gs://nbcu-disco-sdp-stable-int-003-gila-secured-data/archives/ | grep -E '/*gb-salesforce-chat-transcript*'); do
+test [ ${bckt}part-$y-$m-$d*.avro]
+	bq mk --external_table_definition=@AVRO=${bckt}part-$y-$m-$d*.avro salesforce_test_stable_us_22.$(echo $bckt | cut -d '/' -f 5 | sed 's/-/_/g' | sed 's/_secured//')
+done
+
+
+
+for bckt in $(gsutil ls gs://nbcu-sdp-prod-003-gila-secured-data/archives/ | grep -E '/*-payment-manager-*'); do
+test [ ${bckt}*.avro]
+	bq mk --external_table_definition=@AVRO=${bckt}part-$y-$m-$d*.avro ext_tables_us.$(echo $bckt | cut -d '/' -f 5 | sed 's/-/_/g' | sed 's/_secured//')
+done
