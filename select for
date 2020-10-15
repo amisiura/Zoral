@@ -1,0 +1,1 @@
+select * from `sdp-prod-100.sdp_tables_blue.NowTVProductPartner`FOR SYSTEM_TIME AS OF timestamp('2020-10-01 00:00:00'))
