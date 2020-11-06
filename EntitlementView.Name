@@ -1,0 +1,130 @@
+create or replace table `zoral-sandbox.test_report_blue.entitlement_view_main_zero` as
+with rr as (
+select 
+  EntitlementId,
+  ProductStaticId,
+  ProductId,
+  activityType,
+  ActivityTimeStamp,
+  EntitlementDuration,
+  row_number()over(partition by EntitlementId   order by activityType, ActivityTimeStamp desc) as rn1,
+  name, --for Name derivation
+--  row_number() over (partition by EntitlementId,activityType order by ActivityTimeStamp desc) as rn,
+  from `zoral-sandbox.test_report_blue.zTechEntitlementView` zte
+  where true
+  and activityType in('ADD_ENTITLEMENTS','ACTIVATE_ENTITLEMENT')
+  and SDPTimestamp <=  (select max(SDPTimestamp) from `zoral-sandbox.sdp_views_cr.EntitlementDatasetA`   )
+)
+
+--, main_one as (
+select
+   upper(
+      case -- вторая итерация Name
+        when t.activityType in ('ADD_ENTITLEMENTS','ACTIVATE_ENTITLEMENT') and t.Name is not null 
+          then t.Name
+         when t.activityType not in ('ADD_ENTITLEMENTS','ACTIVATE_ENTITLEMENT')  
+            then  rr_name 
+      end) as Name,
+      t.name as t_name,
+      *except(name),
+from (
+  select 
+   rr.ActivityType as rr_ActivityType,
+   rr.rn1 as rr_rn1,
+  zte.EntitlementId,
+  --OriginalEntitlementId,--calculated
+  --SubscriptionId,
+  HouseholdId,
+   case 
+      when zte.activityType in ('ADD_ENTITLEMENTS') and  zte.billingType is not null then zte.billingType 
+      else case when Product_Catalogue_A.BillingType is not null then Product_Catalogue_A.BillingType else Product_Catalogue_B.BillingType end 
+   end as billingType,
+  -- ProductCategory,--calculated in `zoral-sandbox.test_report_blue.entitlement_view_category`
+  zte.Name,
+  rr.Name as rr_name,
+  zte.ProductId, -- calculated in `zoral-sandbox.test_report_blue.entitlement_view_product` 
+  zte.ProductStaticId,-- calculated in `zoral-sandbox.test_report_blue.entitlement_view_product`
+  row_number() over (partition by zte.EntitlementId, zte.ActivityTimestamp order by TIMESTAMP_DIFF(zte.ActivityTimeStamp, rr.ActivityTimeStamp, second) ) as rn,
+ -- end as DerivedState,--calculated
+  zte.EntitlementDuration,
+  case when Product_Catalogue_A.ProductCategory is not null then Product_Catalogue_A.ProductCategory else Product_Catalogue_B.ProductCategory end as ProductCategory, 
+case when Product_Catalogue_A.DatePublished is not null then Product_Catalogue_A.DatePublished else Product_Catalogue_B.DatePublished end as DatePublished,
+case when Product_Catalogue_A.ActivationType is not null then Product_Catalogue_A.ActivationType else Product_Catalogue_B.ActivationType end as ActivationType,
+case when Product_Catalogue_A.ProductName is not null then Product_Catalogue_A.ProductName else Product_Catalogue_B.ProductName end as ProductName,
+-- case when Product_Catalogue_A.BillingType is not null then Product_Catalogue_A.BillingType else Product_Catalogue_B.BillingType end as BillingType,
+  --DerivedSourcePartner--calculated
+  -- DerivedActivationWindow,--calculated
+  -- DerivedActivationStartDate,--calculated
+  -- DerivedActivationStartDateSD,--calculated
+  -- DerivedActivationEndDate,--calculated
+  -- DerivedActivationEndDateSD,--calculated
+  --DerivedStartDate,--calculated
+  -- DerivedStartDateSD,--calculated
+  -- DerivedEndDate,--calculated
+  -- DerivedEndDateSD,--calculated
+  -- EffectiveFrom,--calculated
+  -- EffectiveFromSD,--calculated
+  -- EffectiveTo,--calculated
+  -- EffectiveToSD,--calculated
+  OriginatingClientId,
+  State,
+  SourcePartner,
+  ActivationWindow,
+  ActivationStartDate,
+  --CAST(ActivationStartDate as DATE) as ActivationStartDateSD,
+  ActivationEndDate,
+  --CAST(ActivationEndDate as DATE) as ActivationEndDateSD,
+  StartDate,
+  --StartDateSD,
+  EndDate,
+  --CAST(EndDate as DATE) as  EndDateSD,
+  zte.ActivityTimestamp,
+  --CAST(zte.ActivityTimestamp as DATE) as ActivityTimestampSD,
+  zte.ActivityType,
+  OriginatingSystem,
+  Provider,
+  ProviderTerritory,
+  zte.SDPTerritory,
+  zte.SDPSourceOrigin,
+  zte.SDPSourceType,
+  ARRAY_TO_STRING(zte.SDPSource, ",") as SDPSource,
+  zte.SDPBusinessDate,
+  zte.SDPTimestamp
+   from `zoral-sandbox.test_report_blue.zTechEntitlementView` zte
+   -- left join first_value fv on zte.EntitlementId=fv.EntitlementId and fv.ActivityTimeStamp<zte.ActivityTimeStamp and fv.activityType in('ADD_ENTITLEMENTS')
+	left join  rr on zte.EntitlementId=rr.EntitlementId and zte.ActivityTimeStamp>rr.ActivityTimeStamp 
+  and rn1=(case when rr.ActivityType ='ADD_ENTITLEMENTS' then 1 else 2 end)
+  
+	left join `zoral-sandbox.test_report_blue.product_catalogue_A`  Product_Catalogue_A
+		on zte.ProductId = Product_Catalogue_A.ProductId
+		and date (zte.ActivityTimestamp) >=  date(Product_Catalogue_A.DatePublished)
+	left join `zoral-sandbox.test_report_blue.product_catalogue_B`  Product_Catalogue_B
+		on zte.ProductId = Product_Catalogue_B.ProductId
+		and date (zte.ActivityTimestamp) <  date(Product_Catalogue_B.DatePublished)
+
+    --where zte.EntitlementId='43313c36-f94b-4990-8e6f-7b9e34623721'
+    where zte.activityType in (
+'ADD_ENTITLEMENTS',
+'ACTIVATE_ENTITLEMENT',
+'DEACTIVATE_ENTITLEMENT',
+'CANCEL_ENTITLEMENTS',
+'REINSTATE_ENTITLEMENTS'
+    )
+--     and zte.EntitlementId ='dc4cb907-c055-40d0-b2bd-78d2a6152a0a'
+      and SDPTimestamp <=  (select max(SDPTimestamp) from `zoral-sandbox.sdp_views_cr.EntitlementDatasetA` )
+	  
+)t where rn=1;
+
+select rr_ActivityType,rr_rn1, s.Name, t.Name, s.EntitlementId, t.EntitlementId, s.ActivityType, t.ActivityType, s.ActivityTimeStamp, t.ActivityTimeStamp from
+`zoral-sandbox.test_report_blue.entitlement_view_main_zero` s
+inner join
+`zoral-sandbox.sdp_views_cr.EntitlementDatasetA` t
+on 
+t.EntitlementId=s.EntitlementId
+and
+t.ActivityTimeStamp=s.ActivityTimeStamp 
+and 
+t.Name<>s.Name
+where  s.SDPTimestamp <=  (select max(SDPTimestamp) from `zoral-sandbox.sdp_views_cr.EntitlementDatasetA` )
+-- and
+-- s.EntitlementId = 'aa85822b-3891-4713-a368-d37a03fa2cb8'
