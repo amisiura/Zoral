@@ -93,7 +93,11 @@ case when Product_Catalogue_A.ProductName is not null then Product_Catalogue_A.P
    from `zoral-sandbox.test_report_blue.zTechEntitlementView` zte
    -- left join first_value fv on zte.EntitlementId=fv.EntitlementId and fv.ActivityTimeStamp<zte.ActivityTimeStamp and fv.activityType in('ADD_ENTITLEMENTS')
 	left join  rr on zte.EntitlementId=rr.EntitlementId and zte.ActivityTimeStamp>rr.ActivityTimeStamp 
-  and rn1=(case when rr.ActivityType ='ADD_ENTITLEMENTS' then 1 else 2 end)
+  and rn1=case 
+            when rr.ActivityType ='ADD_ENTITLEMENTS' then 1 
+            when rr.ActivityType ='ACTIVATE_ENTITLEMENT' then 2
+            else 1 
+            end
   
 	left join `zoral-sandbox.test_report_blue.product_catalogue_A`  Product_Catalogue_A
 		on zte.ProductId = Product_Catalogue_A.ProductId
@@ -127,4 +131,4 @@ and
 t.Name<>s.Name
 where  s.SDPTimestamp <=  (select max(SDPTimestamp) from `zoral-sandbox.sdp_views_cr.EntitlementDatasetA` )
 -- and
--- s.EntitlementId = 'aa85822b-3891-4713-a368-d37a03fa2cb8'
+-- s.EntitlementId = '26084416-1c59-45be-a5db-85e9cd60dd1f'
