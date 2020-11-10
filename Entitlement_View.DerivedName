@@ -45,3 +45,42 @@ select
     where  ent.ActivityType <> 'ELAPSED_CANCELLED_ENTITLEMENT'
           and SDPTimestamp <=  (select max(SDPTimestamp) from `zoral-sandbox.sdp_views_cr.EntitlementDatasetA` )
 ;
+
+
+
+select t.*,
+    p.ProductCategory,
+    p.partner,
+    p.ActivationType,
+    p.DerivedName,
+    p.BillingType
+from 
+(
+ select
+ case when s.ActivityTimestamp >= max_DatePublished then max_DatePublished else min_DatePublished end as needed_DatePublished, 
+ s.ProductId, s.ActivityTimestamp, max_DatePublished, min_DatePublished,  EntitlementId
+ from `zoral-sandbox.test_report_blue.entitlement_view_product` s
+ left join (
+ select 
+     p.ProductId,
+     max(PomCatalogueModelInfo.DatePublished) AS max_DatePublished,
+     min(PomCatalogueModelInfo.DatePublished) AS min_DatePublished,     
+    from `sdp-prod-100.sdp_tables_blue.Product` p
+--     where p.ProductId='C_005381' 
+    group by p.ProductId
+    ) p on p.ProductId=s.ProductId
+    where s.EntitlementId='b273fb55-dc23-4897-8b47-c34133a74f1b'
+--   where SDPTimestamp <=  (select max(SDPTimestamp) from `zoral-sandbox.sdp_views_cr.EntitlementDatasetA` )
+) t left join 
+(select 
+    ProductId,
+    Category AS ProductCategory,
+    ifnull(p.Partner,'') as partner,
+    ifnull(re.ActivationType,'') as ActivationType,
+    re.Name as DerivedName,
+    re.BillingType as BillingType,
+    p.PomCatalogueModelInfo.DatePublished as DatePublished
+from `sdp-prod-100.sdp_tables_blue.Product` p
+left join unnest ( Resources.Entitlements ) re
+) p on  p.ProductId=t.ProductId and p.DatePublished = t.needed_DatePublished
+    
