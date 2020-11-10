@@ -51,44 +51,6 @@
 begin
 create or replace  temp table der_window1 as 
 
-with add_ent as (
-select distinct EntitlementId, Activitytype , ActivityTimestamp 
-from `zoral-sandbox.test_report_blue.entitlement_view_product`
-where activityType = 'ADD_ENTITLEMENTS'
-)
-
-
-
--- select *,
---   case 
---     when  s.activityType = 'ADD_ENTITLEMENTS' AND DerivedBillingType = 'Non_Recurring' AND activationWindow is null 
---       then IFNULL(prod_ActivationWindow, 'P1Y') 
---     when s.activityType = 'ADD_ENTITLEMENTS' AND DerivedBillingType = 'Non_Recurring' AND activationWindow is not null 
---       then activationWindow
---     when s.activityType <> 'ADD_ENTITLEMENTS' AND DerivedBillingType = 'Non_Recurring' 
---     end as DerivedactivationWindow,
-
--- from (
-select *,
-  case 
-    when  s.sourceActivityType = 'ADD_ENTITLEMENTS' AND DerivedBillingType = 'Non_Recurring' AND activationWindow is null 
-      then IFNULL(prod_ActivationWindow, 'P1Y') 
-    when s.sourceActivityType = 'ADD_ENTITLEMENTS' AND DerivedBillingType = 'Non_Recurring' AND activationWindow is not null 
-      then activationWindow
-    end as DerivedactivationWindow,
-    row_number() over (partition by s.sourceEntitlementId order by TIMESTAMP_DIFF(s.sourceActivityTimestamp, a.ActivityTimeStamp, second) ) as rn,  
-from(
-select  
-s.ActivityType as sourceActivityType,
-s.DerivedName as sourceDerivedName, 
-s.ProductId,
-s.EntitlementId as sourceEntitlementId,
-s.DerivedBillingType,
-s.ActivityTimestamp as sourceActivityTimestamp,
-s.activationWindow,
-s.prod_ActivationWindow,
-from 
-(
   select t.*,
       p.ProductCategory,
       p.partner,
@@ -131,38 +93,33 @@ from
       p.PomCatalogueModelInfo.DatePublished as DatePublished
   from `sdp-prod-100.sdp_tables_blue.Product` p
   left join unnest ( Resources.Entitlements ) re
-  ) p on  p.ProductId=t.ProductId and p.DatePublished = t.needed_DatePublished
-) s
-)s
-
-left join add_ent a on s.sourceEntitlementId=a.EntitlementId and s.sourceActivityTimestamp>a.ActivityTimestamp;
+  ) p on  p.ProductId=t.ProductId and p.DatePublished = t.needed_DatePublished;
 
 
 
-create or replace temp table der_window2 as
+with res1 as (
 select 
-  case 
-    when  dw1.sourceActivityType = 'ADD_ENTITLEMENTS' AND dw1.DerivedBillingType = 'Non_Recurring' AND activationWindow is null 
-      then IFNULL(prod_ActivationWindow, 'P1Y') 
-    when dw1.sourceActivityType = 'ADD_ENTITLEMENTS' AND dw1.DerivedBillingType = 'Non_Recurring' AND activationWindow is not null 
-      then activationWindow
-    when sourceActivityType <> 'ADD_ENTITLEMENTS' AND DerivedBillingType = 'Non_Recurring' 
-      then dw2.DerivedactivationWindow
-    end as DerivedactivationWindow,
-dw1.*except(DerivedactivationWindow)
-from der_window1 dw1
-left join 
-(select DerivedactivationWindow, sourceEntitlementId, sourceActivityTimestamp from der_window1
-where rn=1
-) dw2 on dw1.sourceEntitlementId=dw2.sourceEntitlementId;
-
-
-select * from der_window2 s
+distinct 
+s.DerivedBillingType as s_DerivedBillingType, 
+t.DerivedBillingType, 
+s.EntitlementId as s_EntitlementId, 
+t.EntitlementId, 
+s.ActivityTimestamp as s_ActivityTimestamp, 
+t.ActivityTimestamp,
+row_number() over (partition by t.EntitlementId, t.ActivityTimestamp) as rn
+from der_window1 s
 inner join `zoral-sandbox.sdp_views_cr.EntitlementDatasetA` t
-on s.sourceEntitlementId = t.EntitlementId 
-and s.sourceActivityTimestamp=t.ActivityTimestamp
+on s.EntitlementId = t.EntitlementId 
+and s.ActivityTimestamp=t.ActivityTimestamp
 -- and s.DerivedactivationWindow <> t.DerivedactivationWindow;
-and ifnull(s.DerivedBillingType,'')<>ifnull(t.DerivedBillingType,'')   ;
+and ifnull(s.DerivedBillingType,'')<>ifnull(t.DerivedBillingType,'')  
+-- order by s.EntitlementId, s.ActivityTimestamp desc  
+)
+
+
+select * from res1 where (s_EntitlementId, s_ActivityTimestamp) not in (select (s_EntitlementId, s_ActivityTimestamp) from res1 where rn>1) 
+
+;
 end;
 
 
