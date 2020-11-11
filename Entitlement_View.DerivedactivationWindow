@@ -30,6 +30,7 @@
 -- select 
 -- 			ent.EntitlementId, 
 -- 			ent.ActivityTimestamp, 
+--       mx.max_add_ent_Activitytimestamp as mx_max_add_ent_Activitytimestamp,
 -- 			ent.Activitytype, 
 --       ent.SDPTimestamp ,
 --       ent.activationWindow,
@@ -47,14 +48,15 @@
 --     where  ent.ActivityType <> 'ELAPSED_CANCELLED_ENTITLEMENT'
 --           and SDPTimestamp <=  (select max(SDPTimestamp) from `zoral-sandbox.sdp_views_cr.EntitlementDatasetA` )
 -- ;
+
 begin
 create or replace  temp table der_window1 as 
 
-with add_ent as (
-select distinct EntitlementId, Activitytype , ActivityTimestamp 
-from `zoral-sandbox.test_report_blue.entitlement_view_product`
-where activityType = 'ADD_ENTITLEMENTS'
-)
+-- with add_ent as (
+-- select distinct EntitlementId, Activitytype , ActivityTimestamp 
+-- from `zoral-sandbox.test_report_blue.entitlement_view_product`
+-- where activityType = 'ADD_ENTITLEMENTS'
+-- )
 
 
 
@@ -75,12 +77,13 @@ select *,
     when s.sourceActivityType = 'ADD_ENTITLEMENTS' AND DerivedBillingType = 'Non_Recurring' AND activationWindow is not null 
       then activationWindow
     end as DerivedactivationWindow,
-    row_number() over (partition by s.sourceEntitlementId order by TIMESTAMP_DIFF(s.sourceActivityTimestamp, a.ActivityTimeStamp, second) ) as rn,  
+--     row_number() over (partition by s.sourceEntitlementId order by TIMESTAMP_DIFF(s.sourceActivityTimestamp, a.ActivityTimeStamp, second) ) as rn,  
 from(
 select  
 s.ActivityType as sourceActivityType,
 s.DerivedName as sourceDerivedName, 
 s.ProductId,
+s.mx_max_add_ent_Activitytimestamp,
 s.EntitlementId as sourceEntitlementId,
 s.DerivedBillingType,
 s.ActivityTimestamp as sourceActivityTimestamp,
@@ -104,7 +107,7 @@ from
   (
    select
    case when s.ActivityTimestamp >= max_DatePublished then max_DatePublished else min_DatePublished end as needed_DatePublished, 
-   s.ProductId, s.ActivityTimestamp, max_DatePublished, min_DatePublished,  EntitlementId, s.ActivityType, s.activationWindow
+   s.ProductId, s.ActivityTimestamp, max_DatePublished, min_DatePublished,  EntitlementId, s.ActivityType, s.activationWindow, s.mx_max_add_ent_Activitytimestamp
    from `zoral-sandbox.test_report_blue.entitlement_view_product` s
    left join (
    select 
@@ -133,8 +136,8 @@ from
   ) p on  p.ProductId=t.ProductId and p.DatePublished = t.needed_DatePublished
 ) s
 )s
-
-left join add_ent a on s.sourceEntitlementId=a.EntitlementId and s.sourceActivityTimestamp>a.ActivityTimestamp;
+;
+-- left join add_ent a on s.sourceEntitlementId=a.EntitlementId and s.sourceActivityTimestamp>a.ActivityTimestamp;
 
 
 
@@ -152,8 +155,8 @@ dw1.*except(DerivedactivationWindow)
 from der_window1 dw1
 left join 
 (select DerivedactivationWindow, sourceEntitlementId, sourceActivityTimestamp from der_window1
-where rn=1
-) dw2 on dw1.sourceEntitlementId=dw2.sourceEntitlementId;
+-- where rn=1
+) dw2 on dw1.sourceEntitlementId=dw2.sourceEntitlementId and dw1.mx_max_add_ent_Activitytimestamp=dw2.sourceActivityTimestamp;
 
 select * from der_window2 s
 inner join `zoral-sandbox.sdp_views_cr.EntitlementDatasetA` t
