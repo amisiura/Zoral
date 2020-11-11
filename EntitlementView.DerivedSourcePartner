@@ -1,0 +1,208 @@
+    
+-- create or replace table `zoral-sandbox.test_report_blue.entitlement_view_product` as
+-- with
+-- add_ent as (
+-- SELECT 
+--         EntitlementId,
+-- 		ProductStaticId,
+--         ProductId ,
+--         ActivityTimestamp,
+--         Activitytype,
+--     FROM 
+--          `sdp-prod-100.sdp_views.zTechEntitlementView`
+--     WHERE 
+--         ActivityType = 'ADD_ENTITLEMENTS'
+--           and SDPTimestamp <=  (select max(SDPTimestamp) from `zoral-sandbox.sdp_views_cr.EntitlementDatasetA` )
+--          ),
+-- max_add_ent as ( 
+-- select  max (ch.Activitytimestamp) as max_add_ent_Activitytimestamp,
+--          t.ActivityTimestamp, t.Activitytype , t.EntitlementId
+--           from    `sdp-prod-100.sdp_views.zTechEntitlementView` t 
+--           left  join  add_ent ch
+--           on ch.EntitlementId = t.EntitlementId 
+--           and ch.Activitytimestamp < t.Activitytimestamp
+--           where   t.ActivityType not in ( 'ELAPSED_CANCELLED_ENTITLEMENT','ADD_ENTITLEMENTS')
+--             and SDPTimestamp <=  (select max(SDPTimestamp) from `zoral-sandbox.sdp_views_cr.EntitlementDatasetA` )
+--           group by t.ActivityTimestamp, t.Activitytype , t.EntitlementId
+--           ) 
+		  
+		  
+-- --,product_id as ( 
+-- select 
+-- 			ent.EntitlementId, 
+-- 			ent.ActivityTimestamp, 
+--       mx.max_add_ent_Activitytimestamp as mx_max_add_ent_Activitytimestamp,
+-- 			ent.Activitytype, 
+--       ent.SDPTimestamp ,
+--       ent.activationWindow,
+--       ent.HouseholdId,
+--       ent.BillingType,
+--       ent.sourcePartner,
+-- 			case when ent.Activitytype = 'ADD_ENTITLEMENTS' then ent.ProductStaticId else adt.ProductStaticId end as ProductStaticId,
+--       case when ent.Activitytype = 'ADD_ENTITLEMENTS' then ent.ProductID else adt.ProductID end as ProductID
+--        from `sdp-prod-100.sdp_views.zTechEntitlementView` ent
+--        left join max_add_ent mx
+--        on ent.EntitlementId = mx.EntitlementId
+--        and ent.Activitytimestamp = mx.Activitytimestamp
+--        and ent.ActivityType = mx.ActivityType
+--        left join add_ent adt
+--        on ent.EntitlementId = adt.EntitlementId
+--        and mx.max_add_ent_Activitytimestamp = adt.Activitytimestamp
+--     where  ent.ActivityType <> 'ELAPSED_CANCELLED_ENTITLEMENT'
+--           and SDPTimestamp <=  (select max(SDPTimestamp) from `zoral-sandbox.sdp_views_cr.EntitlementDatasetA` )
+-- ;
+
+
+begin
+create or replace  temp table der_window1 as 
+with add_ent as (
+select distinct EntitlementId, Activitytype , ActivityTimestamp 
+from `zoral-sandbox.test_report_blue.entitlement_view_product`
+where activityType = 'ADD_ENTITLEMENTS'
+)
+
+select
+t.*except (DerivedSourcePartner), 
+a.ActivityTimestamp as a_ActivityTimestamp,
+a.activityType as a_activityType,
+case
+ when t.activityType = 'ADD_ENTITLEMENTS' AND t.DerivedSourcePartner is null then partner
+ else t.DerivedSourcePartner
+end as DerivedSourcePartner, --calculated
+
+from
+(
+      select  
+      s.mx_max_add_ent_Activitytimestamp,
+      s.ProductId,
+      s.EntitlementId,
+      s.ActivityTimestamp,
+      s.activityType,
+      s.sourcePartner,
+      partner,
+      case
+        when s.activityType = 'ADD_ENTITLEMENTS' AND s.sourcePartner is not null then s.sourcePartner
+        when s.sourcePartner is null then null 
+        else null
+      end as DerivedSourcePartner,--calculated
+
+      from 
+      (
+          select t.*,
+              p.ProductCategory,
+              p.partner,
+              p.ActivationType,
+              p.DerivedName,
+              p.BillingType
+      --         t.sourcePartner,
+      --         t.activityType
+          from 
+          (
+           select
+             case when s.ActivityTimestamp >= max_DatePublished then max_DatePublished else min_DatePublished end as needed_DatePublished, 
+             s.ProductId,
+             s.ActivityTimestamp, 
+             max_DatePublished, 
+             min_DatePublished,  
+             EntitlementId, 
+             s.sourcePartner, 
+             s.activityType, 
+             s.mx_max_add_ent_Activitytimestamp
+             from `zoral-sandbox.test_report_blue.entitlement_view_product` s
+             left join 
+           (
+               select 
+                   p.ProductId,
+                   max(PomCatalogueModelInfo.DatePublished) AS max_DatePublished,
+                   min(PomCatalogueModelInfo.DatePublished) AS min_DatePublished,     
+                  from `sdp-prod-100.sdp_tables_blue.Product` p
+              --     where p.ProductId='C_005381' 
+                  group by p.ProductId
+              ) p on p.ProductId=s.ProductId
+
+            where SDPTimestamp <=  (select max(SDPTimestamp) from `zoral-sandbox.sdp_views_cr.EntitlementDatasetA` )
+--             and s.EntitlementId='7f5d44c1-9001-480b-bfb5-af24c88a4509'
+          ) t left join 
+                  (
+                    select 
+                        ProductId,
+                        Category AS ProductCategory,
+                        ifnull(p.Partner,'') as partner,
+                        ifnull(re.ActivationType,'') as ActivationType,
+                        re.Name as DerivedName,
+                        re.BillingType as BillingType,
+                        p.PomCatalogueModelInfo.DatePublished as DatePublished
+                    from `sdp-prod-100.sdp_tables_blue.Product` p
+                    left join unnest ( Resources.Entitlements ) re
+                  ) p on  p.ProductId=t.ProductId and p.DatePublished = t.needed_DatePublished
+      ) s
+
+)t    left join add_ent a on t.EntitlementId=a.EntitlementId and t.mx_max_add_ent_Activitytimestamp=a.ActivityTimestamp
+
+-- order by ActivityTimestamp desc
+    ;
+create or replace temp table der_window2 as
+select 
+dw1.*except (DerivedSourcePartner) , 
+dw2.ActivityTimestamp as dw2_ActivityTimestamp,
+  case
+  	when dw1.activityType <> 'ADD_ENTITLEMENTS'
+			then dw2.DerivedSourcePartner
+		else dw1.DerivedSourcePartner
+  end as DerivedSourcePartner,--calculated 
+from der_window1 dw1
+left join 
+(select DerivedSourcePartner, EntitlementId, ActivityTimestamp, productId from der_window1
+) dw2 on dw1.EntitlementId=dw2.EntitlementId and dw1.mx_max_add_ent_Activitytimestamp=dw2.ActivityTimestamp;
+
+
+select 
+s.activityType,
+t.activityType as taractivityType,
+s.DerivedSourcePartner,
+t.DerivedSourcePartner as tarDerivedSourcePartner,
+s.ActivityTimestamp,
+dw2_ActivityTimestamp,
+mx_max_add_ent_Activitytimestamp,
+-- t.ActivityTimestamp,
+s.EntitlementId,
+s.partner,
+s.sourcePartner,
+t.sourcePartner as tarSourcePartner
+from der_window2 s
+
+-- where EntitlementId='0244387e-e6ed-46b1-a195-78213fce81a2'
+-- order by ActivityTimestamp desc
+-- ;
+
+inner join `zoral-sandbox.sdp_views_cr.EntitlementDatasetA`t
+on s.EntitlementId = t.EntitlementId 
+and s.ActivityTimestamp=t.ActivityTimestamp
+-- and s.ProductId=t.ProductId
+-- and s.DerivedName<>t.DerivedName
+and t.DerivedSourcePartner<>s.DerivedSourcePartner
+order by s.ActivityTimestamp desc
+;
+    
+
+-- ;
+     
+-- with res1 as (
+-- select 
+--   s.ProductId, 
+--   t.ProductId as targetProductId,
+--   s.ActivityTimestamp,
+--   s.EntitlementId, 
+-- row_number() over (partition by t.EntitlementId, t.ActivityTimestamp) as rn
+-- from der_window2 s
+-- inner join `zoral-sandbox.sdp_views_cr.EntitlementDatasetA` t
+-- on s.EntitlementId = t.EntitlementId 
+-- and s.ActivityTimestamp=t.ActivityTimestamp
+-- and s.ProductId <> t.ProductId
+-- -- order by s.EntitlementId, s.ActivityTimestamp desc
+-- )
+
+-- select * from res1 where (EntitlementId, ActivityTimestamp) not in (select (EntitlementId, ActivityTimestamp) from res1 where rn>1) 
+
+
+end;
