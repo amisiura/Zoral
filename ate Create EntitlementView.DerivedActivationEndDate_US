@@ -1,0 +1,293 @@
+-- create or replace table `zoral-sandbox.test_report_us.entitlement_view_product` as
+-- with
+-- add_ent as (
+-- SELECT 
+--         EntitlementId,
+-- 		ProductStaticId,
+--         ProductId ,
+--         ActivityTimestamp,
+--         Activitytype,
+--     FROM 
+--          `nbcu-sdp-prod-003.sdp_views.zTechEntitlementView`
+--     WHERE 
+--         ActivityType = 'ADD_ENTITLEMENTS'
+--           and SDPTimestamp <=  (select max(SDPTimestamp) from `nbcu-sdp-prod-003.sdp_persistent_views.EntitlementView` )
+--          ),
+-- max_add_ent as ( 
+-- select  max (ch.Activitytimestamp) as max_add_ent_Activitytimestamp,
+--          t.ActivityTimestamp, t.Activitytype , t.EntitlementId
+--           from    `nbcu-sdp-prod-003.sdp_views.zTechEntitlementView` t 
+--           left  join  add_ent ch
+--           on ch.EntitlementId = t.EntitlementId 
+--           and ch.Activitytimestamp < t.Activitytimestamp
+--           where   t.ActivityType not in ( 'ELAPSED_CANCELLED_ENTITLEMENT','ADD_ENTITLEMENTS')
+--             and SDPTimestamp <=  (select max(SDPTimestamp) from `nbcu-sdp-prod-003.sdp_persistent_views.EntitlementView` )
+--           group by t.ActivityTimestamp, t.Activitytype , t.EntitlementId
+--           ) 
+		  
+		  
+-- --,product_id as ( 
+-- select 
+-- 			ent.EntitlementId, 
+-- 			ent.ActivityTimestamp, 
+--       mx.max_add_ent_Activitytimestamp as mx_max_add_ent_Activitytimestamp,
+-- 			ent.Activitytype, 
+--       ent.SDPTimestamp ,
+--       ent.activationWindow,
+--       ent.activationEndDate,
+--       ent.activationStartDate,
+      
+-- 			case when ent.Activitytype = 'ADD_ENTITLEMENTS' then ent.ProductStaticId else adt.ProductStaticId end as ProductStaticId,
+--       case when ent.Activitytype = 'ADD_ENTITLEMENTS' then ent.ProductID else adt.ProductID end as ProductID
+--        from `nbcu-sdp-prod-003.sdp_views.zTechEntitlementView` ent
+--        left join max_add_ent mx
+--        on ent.EntitlementId = mx.EntitlementId
+--        and ent.Activitytimestamp = mx.Activitytimestamp
+--        and ent.ActivityType = mx.ActivityType
+--        left join add_ent adt
+--        on ent.EntitlementId = adt.EntitlementId
+--        and mx.max_add_ent_Activitytimestamp = adt.Activitytimestamp
+--     where  ent.ActivityType <> 'ELAPSED_CANCELLED_ENTITLEMENT'
+--           and SDPTimestamp <=  (select max(SDPTimestamp) from `nbcu-sdp-prod-003.sdp_persistent_views.EntitlementView` )
+-- ;
+
+
+begin
+create or replace  temp table der_window1 as 
+
+with min_add_ent as (
+select  EntitlementId, min(ActivityTimestamp) as min_ActivityTimestamp 
+from `zoral-sandbox.test_report_us.entitlement_view_product`
+where activityType = 'ADD_ENTITLEMENTS'
+-- AND EntitlementId ='10E+mekjP/9e4dB4Wauoj53DJw7rMZn6fotTAG1I7v4='
+group by 1
+)
+
+
+
+-- select *,
+--   case 
+--     when  s.activityType = 'ADD_ENTITLEMENTS' AND DerivedBillingType = 'Non_Recurring' AND activationWindow is null 
+--       then IFNULL(prod_ActivationWindow, 'P1Y') 
+--     when s.activityType = 'ADD_ENTITLEMENTS' AND DerivedBillingType = 'Non_Recurring' AND activationWindow is not null 
+--       then activationWindow
+--     when s.activityType <> 'ADD_ENTITLEMENTS' AND DerivedBillingType = 'Non_Recurring' 
+--     end as DerivedactivationWindow,
+
+-- from (
+select 
+minadd.min_ActivityTimestamp,
+s.*,
+  case 
+    when  s.sourceActivityType = 'ADD_ENTITLEMENTS' AND DerivedBillingType = 'Non_Recurring' AND activationWindow is null 
+      then IFNULL(prod_ActivationWindow, 'P1Y') 
+    when s.sourceActivityType = 'ADD_ENTITLEMENTS' AND DerivedBillingType = 'Non_Recurring' AND activationWindow is not null 
+      then activationWindow
+    end as DerivedactivationWindow,
+    
+    case 
+    when sourceActivityType = 'ADD_ENTITLEMENTS'
+        and DerivedBillingType = 'Non_Recurring' 
+        and activationStartDate is null then sourceActivityTimestamp
+
+    when sourceActivityType = 'ADD_ENTITLEMENTS' and DerivedBillingType = 'Non_Recurring' AND activationStartDate is not null 
+      then activationStartDate
+end as DerivedActivationStartDate,
+--     row_number() over (partition by s.sourceEntitlementId order by TIMESTAMP_DIFF(s.sourceActivityTimestamp, a.ActivityTimeStamp, second) ) as rn,  
+from(
+select  
+s.ActivityType as sourceActivityType,
+s.DerivedName as sourceDerivedName, 
+s.ProductId,
+s.EntitlementId as sourceEntitlementId,
+s.DerivedBillingType,
+s.ActivityTimestamp as sourceActivityTimestamp,
+s.activationWindow,
+s.mx_max_add_ent_Activitytimestamp,
+s.prod_ActivationWindow,
+s.activationStartDate,
+s.activationEndDate
+from 
+(
+  select t.*,
+      p.ProductCategory,
+      p.partner,
+      p.ActivationType,
+      p.DerivedName,
+      p.BillingType,
+      p.prod_ActivationWindow as prod_ActivationWindow,
+      case 
+        when p.ActivationType='IMMEDIATE' then 'Recurring'
+        when p.ActivationType='USER_ACTIVATED' then 'Non_Recurring'
+        else NULL
+      end as DerivedBillingType
+  from 
+  (
+   select
+   case when s.ActivityTimestamp >= max_DatePublished then max_DatePublished else min_DatePublished end as needed_DatePublished, 
+   s.ProductId,
+   s.ActivityTimestamp,
+   max_DatePublished, 
+   min_DatePublished, 
+   EntitlementId,
+   s.ActivityType, 
+   s.activationWindow, 
+   s.mx_max_add_ent_Activitytimestamp,
+   s.activationEndDate,
+   s.activationStartDate
+   from `zoral-sandbox.test_report_us.entitlement_view_product` s
+   left join (
+   select 
+       p.ProductId,
+       max(PomCatalogueModelInfo.DatePublished) AS max_DatePublished,
+       min(PomCatalogueModelInfo.DatePublished) AS min_DatePublished,     
+      from `nbcu-sdp-prod-003.sdp_tables_blue.Product` p
+  --     where p.ProductId='C_005381' 
+      group by p.ProductId
+      ) p on p.ProductId=s.ProductId
+      where true
+--       and s.EntitlementId='606761ad-ea34-4e64-a032-f08768c6d921'
+    and  SDPTimestamp <=  (select max(SDPTimestamp) from `nbcu-sdp-prod-003.sdp_persistent_views.EntitlementView` )
+  ) t left join 
+  (select 
+      ProductId,
+      Category AS ProductCategory,
+      ifnull(p.Partner,'') as partner,
+      ifnull(re.ActivationType,'') as ActivationType,
+      re.Name as DerivedName,
+      re.BillingType as BillingType,
+      re.ActivationWindow as prod_ActivationWindow,
+      p.PomCatalogueModelInfo.DatePublished as DatePublished
+  from `nbcu-sdp-prod-003.sdp_tables_blue.Product` p
+  left join unnest ( Resources.Entitlements ) re
+  ) p on  p.ProductId=t.ProductId and p.DatePublished = t.needed_DatePublished
+) s
+)s
+left join min_add_ent minadd on s.sourceEntitlementId=minadd.EntitlementId;
+
+-- SELECT * FROM der_window1
+-- ORDER BY sourceActivityTimestamp desc
+-- ;
+
+create or replace temp table der_window2 as
+
+select *,
+case 
+    when sourceActivityType = 'ADD_ENTITLEMENTS' 
+      and DerivedBillingType = 'Non_Recurring' 
+      and activationEndDate is null 
+     then  (select `zoral-sandbox.test_report_us.AddDuration`(DerivedActivationStartDate,  DerivedActivationWindow))  
+
+    when sourceActivityType = 'ADD_ENTITLEMENTS' AND DerivedBillingType = 'Non_Recurring' AND activationEndDate is not null
+      then activationEndDate
+end as DerivedActivationEndDate,
+
+from 
+(
+select distinct
+  case 
+    when  dw1.sourceActivityType = 'ADD_ENTITLEMENTS' AND dw1.DerivedBillingType = 'Non_Recurring' AND activationWindow is null 
+      then IFNULL(prod_ActivationWindow, 'P1Y') 
+    when dw1.sourceActivityType = 'ADD_ENTITLEMENTS' AND dw1.DerivedBillingType = 'Non_Recurring' AND activationWindow is not null 
+      then activationWindow
+    when dw1.sourceActivityType <> 'ADD_ENTITLEMENTS' AND DerivedBillingType = 'Non_Recurring' 
+      then dw2.DerivedactivationWindow
+  end as DerivedactivationWindow,
+    
+  case 
+    when  dw1.sourceActivityType <> 'ADD_ENTITLEMENTS' AND dw1.DerivedBillingType = 'Non_Recurring' 
+       then dw2.DerivedActivationStartDate
+        else dw1.DerivedActivationStartDate
+  end as DerivedActivationStartDate,
+  
+dw1.*except(DerivedactivationWindow, DerivedActivationStartDate)
+from der_window1 dw1
+left join 
+(select DerivedactivationWindow, DerivedActivationStartDate, sourceEntitlementId, sourceActivityType, sourceActivityTimestamp from der_window1
+) dw2 on dw1.sourceEntitlementId=dw2.sourceEntitlementId and dw1.min_ActivityTimestamp=dw2.sourceActivityTimestamp and dw1.sourceActivityType=dw2.sourceActivityType
+)t 
+;
+
+-- SELECT * FROM der_window2
+-- ORDER BY sourceActivityTimestamp desc
+-- ;
+
+create or replace temp table der_window3 as
+select t.*except(DerivedActivationEndDate),  
+  case 
+    when  t.sourceActivityType <> 'ADD_ENTITLEMENTS' AND DerivedBillingType = 'Non_Recurring' 
+       then first_value(a.DerivedActivationEndDate ignore nulls) over (partition by t.sourceEntitlementId order by t.sourceActivityTimestamp)
+        else t.DerivedActivationEndDate
+  end as DerivedActivationEndDate,
+  a.DerivedActivationEndDate as a_DerivedActivationEndDate
+ 
+from der_window2 t
+
+left join 
+(select distinct DerivedActivationEndDate, DerivedActivationStartDate, sourceEntitlementId, sourceActivityType, sourceActivityTimestamp from der_window2
+) a on t.sourceEntitlementId=a.sourceEntitlementId and t.min_ActivityTimestamp=a.sourceActivityTimestamp and t.sourceActivityType=a.sourceActivityType
+;
+-- SELECT * FROM der_window3
+-- ORDER BY sourceActivityTimestamp desc
+-- ;
+
+
+
+select 
+s.DerivedactivationWindow,
+t.DerivedactivationWindow,
+s.DerivedBillingType,
+t.DerivedBillingType,
+s.sourceActivityType,
+t.ActivityType,
+s.DerivedActivationEndDate,
+t.DerivedActivationEndDate as tarDerivedActivationEndDate,
+s.sourceEntitlementId,
+t.EntitlementId,
+ s.sourceActivityTimestamp,
+ t.ActivityTimestamp,
+ s.a_DerivedActivationEndDate,
+ mx_max_add_ent_Activitytimestamp
+from der_window3 s
+inner join `nbcu-sdp-prod-003.sdp_persistent_views.EntitlementView` t
+on s.sourceEntitlementId = t.EntitlementId 
+and s.sourceActivityTimestamp=t.ActivityTimestamp
+and s.sourceActivityType=t.ActivityType
+and ifnull(s.DerivedActivationEndDate,'1900-01-01') <> ifnull(t.DerivedActivationEndDate,'1900-01-01')
+order by s.sourceActivityTimestamp desc
+;
+end;
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- select  * --,t.SourcePartner  
+-- from 
+-- `nbcu-sdp-prod-003.sdp_persistent_views.EntitlementView` t 
+-- -- `nbcu-sdp-prod-003.sdp_views.zTechEntitlementView` t
+-- where EntitlementId='26084416-1c59-45be-a5db-85e9cd60dd1f'
+-- order by ActivityTimestamp desc
+
+
+-- -- and s.DerivedName<>t.DerivedName
+-- -- and t.ActivationType<>s.ActivationType
+-- -- and s.DerivedBillingType<>t.DerivedBillingType    
+
+
+-- select
+-- t.EntitlementId,
+-- t.DerivedBillingType,
+-- t.ActivityType,
+-- t.DerivedActivationEndDate ,
+-- t.ActivityTimestamp,
+-- from `nbcu-sdp-prod-003.sdp_persistent_views.EntitlementView` t where EntitlementId='10E+mekjP/9e4dB4Wauoj53DJw7rMZn6fotTAG1I7v4='
+-- order by ActivityTimestamp desc
