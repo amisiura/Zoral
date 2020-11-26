@@ -1,0 +1,180 @@
+-- create or replace table `zoral-sandbox.test_report_us.entitlement_view_isLastRecord` as
+-- --,isLastRecord as (
+-- select 
+-- EntitlementId,
+-- ActivityTimeStamp,
+-- row_number() over (partition by EntitlementId order by ActivityTimeStamp desc) as rn
+-- from `nbcu-sdp-prod-003.sdp_views.zTechEntitlementView`zte
+-- where true
+-- and activityType in(
+-- 'ADD_ENTITLEMENTS',
+-- 'ACTIVATE_ENTITLEMENT',
+-- 'DEACTIVATE_ENTITLEMENT',
+-- 'CANCEL_ENTITLEMENTS',
+-- 'REINSTATE_ENTITLEMENTS')
+-- -- and EntitlementId='01194620-7730-49de-bf06-a5980f6adcb6'
+--  and  SDPTimestamp <=  (select max(SDPTimestamp) from `nbcu-sdp-prod-003.sdp_persistent_views.EntitlementView` );
+
+create or replace table `zoral-sandbox.test_report_us.entitlement_view_derivedState` as
+--, derivedState  as (
+select 
+EntitlementId,
+ActivityTimeStamp,
+case 
+  when activityType = 'ADD_ENTITLEMENTS' then State
+  when activityType in ('ACTIVATE_ENTITLEMENT','REINSTATE_ENTITLEMENTS') then 'ACTIVATED'
+  when activityType = 'DEACTIVATE_ENTITLEMENT' then 'QUEUED'
+end as DerivedState
+from `nbcu-sdp-prod-003.sdp_views.zTechEntitlementView` zte
+where true
+and activityType not in(
+'CANCEL_ENTITLEMENTS'
+)
+  and  SDPTimestamp <=  (select max(SDPTimestamp) from `nbcu-sdp-prod-003.sdp_persistent_views.EntitlementView` );
+
+
+create or replace table `zoral-sandbox.test_report_us.entitlement_view_main_two` as 
+
+select 
+*,
+case -- вторая итерация DerivedState
+        when activityType = 'ADD_ENTITLEMENTS' then State
+        when activityType in ('ACTIVATE_ENTITLEMENT','REINSTATE_ENTITLEMENTS') then 'ACTIVATED'
+        when activityType = 'DEACTIVATE_ENTITLEMENT' then 'QUEUED'
+        when (t.activityType = 'CANCEL_ENTITLEMENTS' and ilr_EntitlementId is null) 
+              or
+             (t.activityType = 'CANCEL_ENTITLEMENTS' and ilr_EntitlementId is not null 
+         and /*CURRENT_TIMESTAMP()*/ (select max(SDPTimestamp) from `nbcu-sdp-prod-003.sdp_persistent_views.EntitlementView`) <= EndDate)
+          then case when rn=1 then ds_derivedState end
+        when t.activityType = 'CANCEL_ENTITLEMENTS' and ilr_EntitlementId is not null 
+      and /*CURRENT_TIMESTAMP()*/ (select max(SDPTimestamp) from `nbcu-sdp-prod-003.sdp_persistent_views.EntitlementView`) >= EndDate
+          then 'INACTIVE'
+end as DerivedState,--calculated
+
+
+from 
+(
+    select 
+    t.* ,
+
+     ds.ActivityTimeStamp as ds_ActivityTimeStamp,
+     row_number() over (partition by t.EntitlementId order by TIMESTAMP_DIFF(t.ActivityTimeStamp, ds.ActivityTimeStamp, second) ) as rn,  
+     ds.derivedState as ds_derivedState,
+     row_number() over (partition by t.EntitlementId, t.ActivityTimestamp order by t.ActivityTimestamp desc) as rn1
+    from 
+    (
+    select t.* 
+
+    from (
+    select *
+
+    from (
+    select *
+
+        from 
+        (
+
+        select 
+          t.EntitlementId,
+          --as OriginalEntitlementId,--calculated in `zoral-sandbox.test_report_us.entitlement_view_main_OriginalEntitlementId`
+          SubscriptionId,
+          t.HouseholdId,
+   
+        --   t.ProductCategory,--calculated
+          ilr.EntitlementId as ilr_EntitlementId,
+
+
+          --DerivedStartDate,--calculated
+          -- DerivedStartDateSD,--calculated
+          -- DerivedEndDate,--calculated
+          -- DerivedEndDateSD,--calculated
+          -- EffectiveFrom,--calculated
+          -- EffectiveFromSD,--calculated
+          -- EffectiveTo,--calculated
+          -- EffectiveToSD,--calculated
+          OriginatingClientId,
+          State,
+          SourcePartner,
+          ActivationWindow,
+          ActivationStartDate,
+          --CAST(ActivationStartDate as DATE) as ActivationStartDateSD,
+          ActivationEndDate,
+          --CAST(ActivationEndDate as DATE) as ActivationEndDateSD,
+          StartDate,
+          --StartDateSD,
+          EndDate,
+          --CAST(EndDate as DATE) as  EndDateSD,
+          t.ActivityTimestamp,
+          --CAST(zte.ActivityTimestamp as DATE) as ActivityTimestampSD,
+          t.ActivityType,
+          OriginatingSystem,
+          Provider,
+          ProviderTerritory,
+          SDPTerritory,
+          SDPSourceOrigin,
+          SDPSourceType,
+          SDPSource,
+          SDPBusinessDate,
+          SDPTimestamp
+        from `nbcu-sdp-prod-003.sdp_views.zTechEntitlementView` t 
+            left join 
+              (select distinct ord_p1.EntitlementId,
+                      ord_p.ProductSubscription.SubscriptionId
+              from `nbcu-sdp-prod-003.sdp_migration_test.zTechOrderView` ord, 
+                     ord.OrderProducts ord_p
+                left join ord_p.ProductEntitlements ord_p1
+                where   SDPTimestamp <=  (select max(SDPTimestamp) from `nbcu-sdp-prod-003.sdp_persistent_views.EntitlementView` )
+              )  od
+      on t.EntitlementId = od.EntitlementId
+
+        -- джойним таблицу с последними записями для проверки в расчете derivedState
+        left join `zoral-sandbox.test_report_us.entitlement_view_isLastRecord` ilr on t.EntitlementId=ilr.EntitlementId and t.ActivityTimeStamp=ilr.ActivityTimeStamp and ilr.rn=1
+      ) t
+    )t
+    )t
+    left join `zoral-sandbox.test_report_us.entitlement_view_product`  p on
+         t.EntitlementId=p.EntitlementId and p.ActivityTimestamp=t.ActivityTimestamp
+    ) t
+    -- left join  prev_DerivedSourcePartner pd on	  t.EntitlementId=pd.EntitlementId and t.productId=pd.productId
+        -- джойним предварительно рассчитанный derivedState для activityType! = 'CANCEL_ENTITLEMENTS'
+    left join `zoral-sandbox.test_report_us.entitlement_view_derivedState` ds on t.EntitlementId=ds.EntitlementId and t.ActivityTimeStamp>ds.ActivityTimeStamp
+) t where rn1=1 ;
+
+select
+  s.State,
+  t.State as tarState,
+  s.DerivedState, 
+  t.derivedState as targetDerivedState,
+  s.ActivityTimestamp,
+  s.ActivityType ,
+  t.ActivityType as tarActivityType,
+  s.EntitlementId, 
+  s.EndDate,
+  t.EndDate as tarEndDate,
+  ilr_EntitlementId,
+  (select max(SDPTimestamp) from `nbcu-sdp-prod-003.sdp_persistent_views.EntitlementView`) as curr_time,
+  s.rn
+from `zoral-sandbox.test_report_us.entitlement_view_main_two` s
+
+inner join `nbcu-sdp-prod-003.sdp_persistent_views.EntitlementView` t
+on s.EntitlementId = t.EntitlementId 
+and s.ActivityTimestamp=t.ActivityTimestamp
+and s.ActivityType=t.ActivityType
+and s.derivedState <> t.derivedState
+
+;
+
+
+-- select 'entitlement_view_main_two' as side, t.ActivityTimestamp, t.ActivityType  from 
+-- `zoral-sandbox.test_report_us.entitlement_view_main_two` t
+-- -- `nbcu-sdp-prod-003.sdp_persistent_views.EntitlementView` t
+-- -- `nbcu-sdp-prod-003.sdp_views.zTechEntitlementView` t
+-- where EntitlementId='01194620-7730-49de-bf06-a5980f6adcb6'
+-- union all
+
+-- select 'EntitlementDatasetA' as side, t.ActivityTimestamp, t.ActivityType  from 
+-- -- `zoral-sandbox.test_report_us.entitlement_view_main_two`
+-- `nbcu-sdp-prod-003.sdp_persistent_views.EntitlementView` t
+-- -- `nbcu-sdp-prod-003.sdp_views.zTechEntitlementView` t
+-- where EntitlementId='01194620-7730-49de-bf06-a5980f6adcb6'
+-- order by  ActivityTimestamp desc
