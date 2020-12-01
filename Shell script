@@ -82,28 +82,21 @@ done
 nbcu-disco-sdp-int-003-gila-secured-data/archives/alpha-de-dmap-split-vq-title-main-feature-secured
 *-payments-manager-cancel-pass-failure-secured
 
-y=$(date +%Y)
-m=$(date +%m)
-d=$(date +%d)
-for bckt in $(gsutil ls gs://sdp-prod-100-gila-secured-data/archives/ | grep -E '/*-dmap-split-vq-title*'); do
+y=$(date --date='1 day ago' +%Y)
+m=$(date --date='1 day ago' +%m)
+d=$(date  -d "-1 day" +%d)
+bq rm -d -r -f now_tv_test
+bq --location=EU mk -d now_tv_test
+for bckt in $(gsutil ls gs://sdp-stable-int-100-gila-secured-data/archives/ | grep -E '/*-now-tv-*'); do
 test [ ${bckt}part-$y-$m-$d*.avro]
-	bq mk --external_table_definition=@AVRO=${bckt}part-$y-$m-$d*.avro hard_buckets_tables.$(echo $bckt | cut -d '/' -f 5 | sed 's/-/_/g' | sed 's/_secured//')
+	bq mk --external_table_definition=@AVRO=${bckt}part-$y-$m-$d*.avro now_tv_test.$(echo $bckt | cut -d '/' -f 5 | sed 's/-/_/g' | sed 's/_secured//')
 done
 
-y=$(date +%Y)
-m=$(date +%m)
-d=$(date +%d)
-bq rm -d -r -f release_26112020
-bq --location=EU mk -d release_26112020
+
 for bckt in $(gsutil ls gs://sdp-prod-100-gila-secured-data/archives/ | grep -E '/*-payment-manager-*'); do
 test [ ${bckt}*.avro]
-	bq mk --external_table_definition=@AVRO=${bckt}*.avro release_26112020.$(echo $bckt | cut -d '/' -f 5 | sed 's/-/_/g' | sed 's/_secured//')
+	bq mk --external_table_definition=@AVRO=${bckt}*.avro hard_buckets_tables.$(echo $bckt | cut -d '/' -f 5 | sed 's/-/_/g' | sed 's/_secured//')
 done
-
-
-gsutil ls gs://sdp-prod-100-gila-secured-data/archives/ | grep -E '/*-dmap-split-vq-title*'
-
-gsutil ls gs://sdp-prod-100-gila-secured-data/archives/ | grep -E '/*-entitlement-manager-*'
 
 -----//////////////////
 nbcu-sdp-prod-003-gila-secured-data/archives/us-peacock-adobe-analytics-secured
@@ -120,7 +113,7 @@ d=$(date  -d "-1 day" +%d)
 dd=$(date  -d "-2 day" +%d) 
 bq rm -d -r -f ext_tables_us
 bq --location=US mk -d ext_tables_us
-for bckt in $(gsutil ls gs://nbcu-sdp-prod-003-gila-secured-data/archives/ | grep -E '/*-dmap-*|*-compass-*|*-peacock-*|*-conviva-quality-*|*-mparticle-*|*-gateway-*|alpha-us-adobe-campaign-manager-*|alpha-eu-adobe-campaign-manager-survey-*|*-payment-manager-*|*-oogway-*'); do
+for bckt in $(gsutil ls gs://nbcu-sdp-prod-003-gila-secured-data/archives/ | grep -E '/*-dmap-*|*-compass-*|*-peacock-*|*-conviva-quality-*|*-mparticle-*|*-gateway-*|alpha-us-adobe-campaign-manager-*|alpha-eu-adobe-campaign-manager-survey-*|*-payment-manager-*|*-oogway-*|*-account-manager-*'); do
 test [ ${bckt}part-$y-$m-$d*.avro]
 	bq mk --external_table_definition=@AVRO=${bckt}part-$y-$m-$d*.avro ext_tables_us.$(echo $bckt | cut -d '/' -f 5 | sed 's/-/_/g' | sed 's/_secured//')
 done
@@ -133,7 +126,7 @@ d=$(date +%d)
 dd=$(date  -d "-1 day" +%d) 
 bq rm -d -r -f ext_tables_us
 bq --location=US mk -d ext_tables_us
-for bckt in $(gsutil ls gs://nbcu-sdp-prod-003-gila-secured-data/archives/ | grep -E '/*-dmap-*|*-compass-*|*-peacock-*|*-mparticle-*|*-gateway-*|alpha-us-adobe-campaign-manager-*|alpha-eu-adobe-campaign-manager-survey-*|*-payment-manager-*|*-oogway-*'); do
+for bckt in $(gsutil ls gs://nbcu-sdp-prod-003-gila-secured-data/archives/ | grep -E '/*-dmap-*|*-compass-*|*-peacock-*|*-conviva-quality-*|*-mparticle-*|*-gateway-*|alpha-us-adobe-campaign-manager-*|alpha-eu-adobe-campaign-manager-survey-*|*-payment-manager-*|*-oogway-*|*-account-manager-*'); do
 test [ ${bckt}part-$y-$m-$d*.avro]
 	bq mk --external_table_definition=@AVRO=${bckt}part-$y-$m-$d*.avro ext_tables_us.$(echo $bckt | cut -d '/' -f 5 | sed 's/-/_/g' | sed 's/_secured//')
 done
