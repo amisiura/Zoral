@@ -1,0 +1,125 @@
+-- -- the most recent previous ACTIVATE_ENTITLEMENT
+create or replace  table `zoral-sandbox.test_report_blue.prevMaxActivityTimeStamp` as (
+with rr as (
+select 
+  EntitlementId,
+  ActivityTimeStamp,
+  from `sdp-prod-100.sdp_views.zTechEntitlementView` zte
+  where true
+  and activityType in('ACTIVATE_ENTITLEMENT')
+  and SDPTimestamp <=  (select max(SDPTimestamp) from `zoral-sandbox.sdp_views_cr.EntitlementDatasetA`   )
+--    and EntitlementId ='71231cd0-6da2-11e5-9d70-feff819cdc9f3'
+-- limit 100
+)
+
+,tt as (
+select zte.ActivityTimestamp,
+zte.EntitlementId,
+max(rr.ActivityTimeStamp) as prev_max_ActivityTimeStamp 
+from `sdp-prod-100.sdp_views.zTechEntitlementView` zte
+left join rr on 
+zte.EntitlementId= rr.EntitlementId
+and
+zte.ActivityTimestamp >rr.ActivityTimestamp 
+-- where  zte.EntitlementId ='71231cd0-6da2-11e5-9d70-feff819cdc9f3'
+-- and zte.ActivityTimeStamp < '2020-10-25 14:00:00 UTC'
+group by 1,2
+-- order by 1
+)
+
+select
+zte.ActivityTimestamp,
+zte.EntitlementId,
+t.prev_max_ActivityTimeStamp
+from tt zte
+left join tt t
+on t.EntitlementId=zte.EntitlementId
+and t.ActivityTimestamp=zte.ActivityTimestamp
+)
+;
+
+---------------//////////////////////
+
+-- the earliest previous ADD_ENTITLEMENTS
+create or replace table `zoral-sandbox.test_report_blue.entitlement_view_product` as (
+
+select * from (
+SELECT 
+        EntitlementId,
+        ActivityTimestamp,
+        Activitytype,
+        startdate,
+        row_number() over (partition by EntitlementId  order by ActivityTimestamp) as rn 
+    FROM 
+         `sdp-prod-100.sdp_views.zTechEntitlementView`
+    WHERE true 
+          and ActivityType = 'ADD_ENTITLEMENTS'
+          and SDPTimestamp <=  (select max(SDPTimestamp) from `zoral-sandbox.sdp_views_cr.EntitlementDatasetA`)
+--            and EntitlementId ='8b6f34f5-c850-4986-8ab6-414597e8fa28'
+          ) where rn=1
+);
+          
+
+create or replace  table `zoral-sandbox.test_report_blue.EntitlementDatasetA_test`  as (
+select t.*, pr.startdate as prevstartdate,
+case
+  when t.activityType = 'ADD_ENTITLEMENTS' and t.DerivedState = 'ACTIVATED' and t.startdate is not null then t.startdate
+  when t.activityType = 'ADD_ENTITLEMENTS' and t.DerivedState = 'QUEUED' then null
+  when t.activityType = 'ACTIVATE_ENTITLEMENT' then t.ActivityTimeStamp
+  when t.DerivedBillingType = 'Recurring' then ifnull(pr.startdate, pr.ActivityTimestamp) --of the earliest previous ADD_ENTITLEMENTS record by ActivityTimeStamp 
+  when t.DerivedBillingType = 'Non_Recurring' then prev_max_ActivityTimeStamp  --ActivityTimeStamp of the most recent previous ACTIVATE_ENTITLEMENT record by ActivityTimeStamp
+  when t.DerivedBillingType is null  AND t.DerivedSourcePartner is not null then IFNULL(pr.startdate, pr.ActivityTimestamp) -- of the earliest previous ADD_ENTITLEMENTS record by ActivityTimeStamp 
+  else null
+end as DerivedStartDate 
+from (
+  select 
+  ds.EntitlementId,
+  ds.ActivityTimestamp,
+  ds.DerivedState,
+  ds.DerivedBillingType,
+  ds.DerivedSourcePartner,
+  ds.startdate,
+  ds.ActivityType,
+  p.prev_max_ActivityTimeStamp,
+--   pr.min_add_ent_Activitytimestamp,
+  min (ds.ActivityTimestamp ) over (partition by ds.EntitlementId  order by ds.ActivityTimestamp) as minActivityTimestamp
+
+  from `zoral-sandbox.sdp_views_cr.EntitlementDatasetA` ds
+  left join `zoral-sandbox.test_report_blue.prevMaxActivityTimeStamp` p -- take prev_max_ActivityTimeStamp - the most recent previous ACTIVATE_ENTITLEMENT
+    on p.ActivityTimestamp =ds.ActivityTimestamp and p.EntitlementId=ds.EntitlementId 
+) t
+left join `zoral-sandbox.test_report_blue.entitlement_view_product` pr -- take min_add_ent_Activitytimestamp, startdate - the earliest previous ADD_ENTITLEMENTS
+  on pr.ActivityTimestamp = t.minActivityTimestamp and pr.EntitlementId=t.EntitlementId
+--   where t.EntitlementId ='4430c96b-5971-45b3-afe0-e7f9f29ef0d5'
+
+);
+
+create or replace  table `zoral-sandbox.test_report_blue.EntitlementView_test_res`  as (
+select
+s.EntitlementId,
+s.ActivityTimestamp,
+s.DerivedBillingType as sourceDerivedBillingType,
+t.DerivedBillingType as targetDerivedBillingType,
+s.DerivedState as sourceDerivedState,
+-- t.DerivedState as targetDerivedState,
+-- s.startdate as sourceStartdate,
+-- t.startdate as targetStartdate,
+s.prevstartdate,
+s.DerivedStartDate as sourceDerivedStartDate, 
+t.DerivedStartDate as targetDerivedStartDate
+from `zoral-sandbox.test_report_blue.EntitlementDatasetA_test` s 
+ inner join `zoral-sandbox.sdp_views_cr.EntitlementDatasetA` t
+ on s.EntitlementId = t.EntitlementId 
+and s.ActivityTimestamp=t.ActivityTimestamp
+-- where t.EntitlementId ='71231cd0-6da2-11e5-9d70-feff819cdc9f3'
+where s.DerivedStartDate <> t.DerivedStartDate
+-- and s.EntitlementId ='4430c96b-5971-45b3-afe0-e7f9f29ef0d5'
+limit 100
+);
+
+
+select
+-- DATETIME_DIFF(DATETIME(sourceDerivedStartDate), DATETIME(targetDerivedStartDate),MILLISECOND) as datediff
+* from `zoral-sandbox.test_report_blue.EntitlementView_test_res`
+-- where EntitlementId ='4430c96b-5971-45b3-afe0-e7f9f29ef0d5'
+;
